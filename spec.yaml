@@ -20,11 +20,11 @@ rjsf-overrides:
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
 
   $defs:
-    ValueGrouper: {
-      description: "Use a categorical column to group data by. If you're unsure which columns are available, run the workflow once without grouping to see the data, then configure grouping in a subsequent run.",
-      title: "Category",
-      "type": "string"
-    }
+    ValueGrouper.oneOf: [
+      {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
+      {"const": "patrol_type", "title": "Patrol Type"},
+      {"const": "patrol_subject", "title": "Patrol Subject"},
+    ]
 
   uiSchema:
     Process Patrol Observations.filter_patrol_obs.filter_point_coords.items.ui:options.label: false
@@ -184,11 +184,21 @@ workflow:
           cast_to_datetime: true
           format: "mixed"
 
+      - name: Rename value grouper columns for Trajectories
+        id: traj_rename_grouper_columns
+        task: map_columns
+        partial:
+          df: ${{ workflow.traj_add_temporal_index.return }}
+          drop_columns: ["patrol_type"]
+          retain_columns: []
+          rename_columns:
+            patrol_type__value: "patrol_type"
+
       - name: Patrol Traj Colormap
         id: traj_colormap
         task: apply_color_map
         partial:
-          df: ${{ workflow.traj_add_temporal_index.return }}
+          df: ${{ workflow.traj_rename_grouper_columns.return }}
           colormap: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
           input_column_name: ${{ workflow.set_patrol_traj_color_column.return }}
           output_column_name: "patrol_traj_colormap"
@@ -315,7 +325,7 @@ workflow:
           retain_columns: []
           rename_columns:
             patrol_serial_number: "Patrol Serial"
-            patrol_type: "Patrol Type"
+            patrol_type__display: "Patrol Type"
             segment_start: "Start Time"
             timespan_seconds: "Duration (s)"
             speed_kmhr: "Speed (kph)"
@@ -351,7 +361,7 @@ workflow:
             width_units: "pixels"
             color_column: "patrol_traj_colormap"
           legend:
-            label_column: "Patrol Type"
+            label_column: ${{ workflow.set_patrol_traj_color_column.return }}
             color_column: "patrol_traj_colormap"
           tooltip_columns: ["Patrol Serial", "Patrol Type", "Start Time", "Duration (s)", "Speed (kph)"]
         mapvalues:
@@ -370,9 +380,7 @@ workflow:
           layer_style:
             fill_color_column: "event_type_colormap"
             get_radius: 5
-          legend:
-            label_column: "Event Type"
-            color_column: "event_type_colormap"
+          legend: null
           tooltip_columns: ["Patrol Serial", "Event Type", "Event Time"]
         mapvalues:
           argnames: geodataframe
@@ -399,8 +407,8 @@ workflow:
           north_arrow_style:
             placement: "top-left"
           legend_style:
-            title: "Legend"
-            format_title: false
+            title: ${{ workflow.set_patrol_traj_color_column.return }}
+            format_title: true
             placement: "bottom-right"
           static: false
           max_zoom: 20

@@ -39,7 +39,7 @@ month-grouper:
         min_speed_kmhr: 0.01
 
     set_patrol_traj_color_column:
-      var: "patrol_type"
+      var: "patrol_subject"
 
     filter_patrol_obs:
       bounding_box:

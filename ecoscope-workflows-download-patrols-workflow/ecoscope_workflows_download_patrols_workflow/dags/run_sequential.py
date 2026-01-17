@@ -498,6 +498,28 @@ def main(params: Params):
         .call()
     )
 
+    traj_rename_grouper_columns = (
+        map_columns.validate()
+        .set_task_instance_id("traj_rename_grouper_columns")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=traj_add_temporal_index,
+            drop_columns=["patrol_type"],
+            retain_columns=[],
+            rename_columns={"patrol_type__value": "patrol_type"},
+            **(params_dict.get("traj_rename_grouper_columns") or {}),
+        )
+        .call()
+    )
+
     traj_colormap = (
         apply_color_map.validate()
         .set_task_instance_id("traj_colormap")
@@ -511,7 +533,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=traj_add_temporal_index,
+            df=traj_rename_grouper_columns,
             colormap=[
                 "#FF9600",
                 "#F23B0E",
@@ -811,7 +833,7 @@ def main(params: Params):
             retain_columns=[],
             rename_columns={
                 "patrol_serial_number": "Patrol Serial",
-                "patrol_type": "Patrol Type",
+                "patrol_type__display": "Patrol Type",
                 "segment_start": "Start Time",
                 "timespan_seconds": "Duration (s)",
                 "speed_kmhr": "Speed (kph)",
@@ -866,7 +888,7 @@ def main(params: Params):
                 "color_column": "patrol_traj_colormap",
             },
             legend={
-                "label_column": "Patrol Type",
+                "label_column": set_patrol_traj_color_column,
                 "color_column": "patrol_traj_colormap",
             },
             tooltip_columns=[
@@ -896,10 +918,7 @@ def main(params: Params):
         )
         .partial(
             layer_style={"fill_color_column": "event_type_colormap", "get_radius": 5},
-            legend={
-                "label_column": "Event Type",
-                "color_column": "event_type_colormap",
-            },
+            legend=None,
             tooltip_columns=["Patrol Serial", "Event Type", "Event Time"],
             **(params_dict.get("patrol_events_map_layers") or {}),
         )
@@ -941,8 +960,8 @@ def main(params: Params):
             tile_layers=base_map_defs,
             north_arrow_style={"placement": "top-left"},
             legend_style={
-                "title": "Legend",
-                "format_title": False,
+                "title": set_patrol_traj_color_column,
+                "format_title": True,
                 "placement": "bottom-right",
             },
             static=False,
