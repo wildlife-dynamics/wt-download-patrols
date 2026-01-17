@@ -63,6 +63,17 @@ month-grouper:
         - {x: 0.0, y: 0.0}
         - {x: 1.0, y: 1.0}
 
+    persist_patrol_traj:
+      filetypes: ["geoparquet", "csv"]
+      filename_prefix: "patrol_trajectories"
+
+    persist_patrol_events:
+      filetypes: ["geoparquet", "csv"]
+      filename_prefix: "patrol_events"
+
+    skip_map_generation:
+      skip: false
+
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"

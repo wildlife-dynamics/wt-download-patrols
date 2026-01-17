@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, constr
 
@@ -76,6 +76,51 @@ class SetPatrolTrajColorColumn(BaseModel):
         extra="forbid",
     )
     var: str = Field(..., title="")
+
+
+class Filetype(str, Enum):
+    csv = "csv"
+    gpkg = "gpkg"
+    geoparquet = "geoparquet"
+
+
+class PersistPatrolTraj(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    filetypes: Optional[List[Filetype]] = Field(
+        ["csv"], description="The output format", title="Filetypes"
+    )
+    filename_prefix: Optional[str] = Field(
+        None,
+        description="            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
+        title="Filename Prefix",
+    )
+
+
+class PersistPatrolEvents(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    filetypes: Optional[List[Filetype]] = Field(
+        ["csv"], description="The output format", title="Filetypes"
+    )
+    filename_prefix: Optional[str] = Field(
+        None,
+        description="            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
+        title="Filename Prefix",
+    )
+
+
+class SkipMapGeneration(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    skip: Optional[bool] = Field(
+        False,
+        description="Skip the following tasks if True, returning a sentinel value.",
+        title="Skip",
+    )
 
 
 class Url(str, Enum):
@@ -244,6 +289,13 @@ class BaseMapDefs(BaseModel):
     )
 
 
+class GenerateMaps(BaseModel):
+    skip_map_generation: Optional[SkipMapGeneration] = Field(
+        None, title="Skip Map Generation"
+    )
+    base_map_defs: Optional[BaseMapDefs] = Field(None, title=" ")
+
+
 class EarthRangerConnection(BaseModel):
     name: str = Field(..., title="Data Source")
 
@@ -299,39 +351,6 @@ class TemporalGrouper(RootModel[str]):
 
 class ValueGrouper(RootModel[str]):
     root: str = Field(..., title="Category")
-
-
-class Sort(str, Enum):
-    ascending = "ascending"
-    descending = "descending"
-
-
-class LegendDefinition(BaseModel):
-    label_column: Optional[str] = Field(None, title="Label Column")
-    color_column: Optional[str] = Field(None, title="Color Column")
-    labels: Optional[List[str]] = Field(None, title="Labels")
-    colors: Optional[List[str]] = Field(None, title="Colors")
-    sort: Optional[Sort] = Field(None, title="Sort")
-    label_suffix: Optional[str] = Field(None, title="Label Suffix")
-
-
-class Placement(str, Enum):
-    top_left = "top-left"
-    top_right = "top-right"
-    bottom_left = "bottom-left"
-    bottom_right = "bottom-right"
-    fill = "fill"
-
-
-class LegendStyle(BaseModel):
-    placement: Optional[Placement] = Field("bottom-right", title="Placement")
-    title: Optional[str] = Field("Legend", title="Title")
-    format_title: Optional[bool] = Field(False, title="Format Title")
-
-
-class NorthArrowStyle(BaseModel):
-    placement: Optional[Placement] = Field("top-left", title="Placement")
-    style: Optional[Dict[str, Any]] = Field({"transform": "scale(0.8)"}, title="Style")
 
 
 class ErClientName(BaseModel):
@@ -457,47 +476,6 @@ class ProcessPatrolEvents(BaseModel):
     )
 
 
-class PatrolTrajMapLayers(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    legend: Optional[LegendDefinition] = Field(
-        None,
-        description="If present, includes this layer in the map legend",
-        title="Legend",
-    )
-
-
-class TrajPatrolEventsEcomap(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    title: Optional[str] = Field(
-        None,
-        description="            The map title. Note this is the title drawn on the map canvas itself, and will result\n            in duplicate titles if set in the context of a dashboard in which the iframe/widget\n            container also has a title set on it.\n            ",
-        title="Title",
-    )
-    north_arrow_style: Optional[NorthArrowStyle] = Field(
-        None,
-        description="Additional arguments for configuring the North Arrow.",
-        title="North Arrow Style",
-    )
-    legend_style: Optional[LegendStyle] = Field(
-        None,
-        description="Additional arguments for configuring the legend.",
-        title="Legend Style",
-    )
-
-
-class EcomapGeneration(BaseModel):
-    patrol_traj_map_layers: Optional[PatrolTrajMapLayers] = Field(
-        None, title="Create Trajectory Map Layers"
-    )
-    traj_patrol_events_ecomap: Optional[TrajPatrolEventsEcomap] = Field(
-        None, title="Draw Ecomaps"
-    )
-
-
 class FormData(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -524,7 +502,14 @@ class FormData(BaseModel):
         alias="Process Patrol Events",
         description="Process patrol events by applying filters.",
     )
-    base_map_defs: Optional[BaseMapDefs] = Field(None, title="Base Maps")
-    Ecomap_Generation: Optional[EcomapGeneration] = Field(
-        None, alias="Ecomap Generation", description="Generate Ecomap"
+    persist_patrol_traj: Optional[PersistPatrolTraj] = Field(
+        None, title="Persist Patrol Trajectories"
+    )
+    persist_patrol_events: Optional[PersistPatrolEvents] = Field(
+        None, title="Persist Patrol Events"
+    )
+    Generate_Maps: Optional[GenerateMaps] = Field(
+        None,
+        alias="Generate Maps",
+        description="Generate maps to visualize patrol trajectories and events.",
     )

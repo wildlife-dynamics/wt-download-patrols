@@ -235,81 +235,126 @@ workflow:
       df: ${{ workflow.pe_colormap.return }}
       groupers: ${{ workflow.groupers.return }}
 
-  - name: Persist Patrol Trajectories as GPKG
-    id: persist_traj_gpkg
-    task: persist_df
+  - name: Persist Patrol Trajectories
+    id: persist_patrol_traj
+    task: persist_df_wrapper
     partial:
-      df: ${{ workflow.patrol_traj.return }}
-      filename: "patrol_trajectories"
-      filetype: "gpkg"
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+      sanitize: true
+    mapvalues:
+      argnames: df
+      argvalues: ${{ workflow.split_patrol_traj_groups.return }}
+    skipif:
+      conditions:
+        - never
 
-  - name: Persist Patrol Trajectories as Parquet
-    id: persist_traj_parquet
-    task: persist_df
+  - name: Persist Patrol Events
+    id: persist_patrol_events
+    task: persist_df_wrapper
     partial:
-      df: ${{ workflow.patrol_traj.return }}
-      filename: "patrol_trajectories"
-      filetype: "geoparquet"
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
+      sanitize: true
+    mapvalues:
+      argnames: df
+      argvalues: ${{ workflow.split_pe_groups.return }}
+    skipif:
+      conditions:
+        - never
 
-  - name: Persist Patrol Events as GPKG
-    id: persist_events_gpkg
-    task: persist_df
-    partial:
-      df: ${{ workflow.filter_patrol_events.return }}
-      filename: "patrol_events"
-      filetype: "gpkg"
-      root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-
-  - name: Persist Patrol Events as Parquet
-    id: persist_events_parquet
-    task: persist_df
-    partial:
-      df: ${{ workflow.filter_patrol_events.return }}
-      filename: "patrol_events"
-      filetype: "geoparquet"
-      root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
-
-  - name: Base Maps
-    id: base_map_defs
-    task: set_base_maps
-
-  - title: Ecomap Generation
+  - title: Generate Maps
     type: task-group
-    description: Generate Ecomap
+    description: >-
+      Generate maps to visualize patrol trajectories and events.
     tasks:
-      - name: Create Event Map Layers
-        id: patrol_events_map_layers
-        task: create_point_layer
-        partial:
-          layer_style:
-            fill_color_column: event_type_colormap
-          legend: null
-          tooltip_columns:
-            - patrol_serial_number
-            - event_type
-            - time
+      - name: Skip Map Generation
+        id: skip_map_generation
+        task: maybe_skip_df
         mapvalues:
-          argnames: geodataframe
+          argnames: df
+          argvalues: ${{ workflow.split_patrol_traj_groups.return }}
+
+      - name: "Set Patrol Map Title"
+        id: set_patrol_map_title
+        task: set_string_var
+        partial:
+          var: "Patrol Trajectories and Events Map"
+
+      - name: " "
+        id: base_map_defs
+        task: set_base_maps
+
+      - name: Rename Trajectory Columns for Display
+        id: rename_traj_display_columns
+        task: map_columns
+        partial:
+          drop_columns: []
+          retain_columns: []
+          rename_columns:
+            patrol_serial_number: "Patrol Serial"
+            patrol_type: "Patrol Type"
+            segment_start: "Start Time"
+            timespan_seconds: "Duration (s)"
+            speed_kmhr: "Speed (kph)"
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.skip_map_generation.return }}
+
+      - name: Rename Event Columns for Display
+        id: rename_event_display_columns
+        task: map_columns
+        partial:
+          drop_columns: []
+          retain_columns: []
+          rename_columns:
+            patrol_serial_number: "Patrol Serial"
+            event_type: "Event Type"
+            time: "Event Time"
+        mapvalues:
+          argnames: df
           argvalues: ${{ workflow.split_pe_groups.return }}
 
       - name: Create Trajectory Map Layers
         id: patrol_traj_map_layers
         task: create_polyline_layer
+        skipif:
+          conditions:
+            - any_is_empty_df
+            - any_dependency_skipped
+            - all_geometry_are_none
         partial:
           layer_style:
             get_width: 3
-            width_units: pixels
-            color_column: patrol_traj_colormap
-          tooltip_columns:
-            - patrol_serial_number
-            - patrol_type
+            width_units: "pixels"
+            color_column: "patrol_traj_colormap"
+          legend:
+            label_column: "Patrol Type"
+            color_column: "patrol_traj_colormap"
+          tooltip_columns: ["Patrol Serial", "Patrol Type", "Start Time", "Duration (s)", "Speed (kph)"]
         mapvalues:
           argnames: geodataframe
-          argvalues: ${{ workflow.split_patrol_traj_groups.return }}
+          argvalues: ${{ workflow.rename_traj_display_columns.return }}
 
-      - name: Combine Trajectories and Patrol Events layers
+      - name: Create Event Map Layers
+        id: patrol_events_map_layers
+        task: create_point_layer
+        skipif:
+          conditions:
+            - any_is_empty_df
+            - any_dependency_skipped
+            - all_geometry_are_none
+        partial:
+          layer_style:
+            fill_color_column: "event_type_colormap"
+            get_radius: 5
+          legend:
+            label_column: "Event Type"
+            color_column: "event_type_colormap"
+          tooltip_columns: ["Patrol Serial", "Event Type", "Event Time"]
+        mapvalues:
+          argnames: geodataframe
+          argvalues: ${{ workflow.rename_event_display_columns.return }}
+
+      - name: Combine Trajectories and Patrol Events Layers
         id: combined_traj_and_pe_map_layers
         task: groupbykey
         skipif:
@@ -325,9 +370,17 @@ workflow:
         id: traj_patrol_events_ecomap
         task: draw_ecomap
         partial:
+          title: null
           tile_layers: ${{ workflow.base_map_defs.return }}
+          north_arrow_style:
+            placement: "top-left"
+          legend_style:
+            title: "Legend"
+            format_title: false
+            placement: "bottom-right"
           static: false
           max_zoom: 20
+          widget_id: ${{ workflow.set_patrol_map_title.return }}
         mapvalues:
           argnames: geo_layers
           argvalues: ${{ workflow.combined_traj_and_pe_map_layers.return }}
@@ -344,12 +397,13 @@ workflow:
       - name: Create Ecomap Widgets
         id: traj_pe_map_widgets_single_views
         task: create_map_widget_single_view
+        skipif:
+          conditions:
+            - never
         partial:
-          title: Combined Patrol Events and Trajectories
+          title: ${{ workflow.set_patrol_map_title.return }}
         map:
-          argnames:
-            - view
-            - data
+          argnames: [view, data]
           argvalues: ${{ workflow.traj_pe_ecomap_html_urls.return }}
 
       - name: Merge Ecomap Views

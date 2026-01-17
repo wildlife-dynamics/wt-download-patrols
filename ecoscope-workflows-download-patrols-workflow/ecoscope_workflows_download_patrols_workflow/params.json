@@ -315,6 +315,84 @@
       "type": "object",
       "title": "Apply Coordinate Filter"
     },
+    "persist_patrol_traj": {
+      "additionalProperties": false,
+      "properties": {
+        "filetypes": {
+          "default": [
+            "csv"
+          ],
+          "items": {
+            "enum": [
+              "csv",
+              "gpkg",
+              "geoparquet"
+            ],
+            "type": "string"
+          },
+          "title": "Filetypes",
+          "type": "array",
+          "description": "The output format",
+          "uniqueItems": true
+        },
+        "filename_prefix": {
+          "default": null,
+          "title": "Filename Prefix",
+          "type": "string",
+          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Persist Patrol Trajectories"
+    },
+    "persist_patrol_events": {
+      "additionalProperties": false,
+      "properties": {
+        "filetypes": {
+          "default": [
+            "csv"
+          ],
+          "items": {
+            "enum": [
+              "csv",
+              "gpkg",
+              "geoparquet"
+            ],
+            "type": "string"
+          },
+          "title": "Filetypes",
+          "type": "array",
+          "description": "The output format",
+          "uniqueItems": true
+        },
+        "filename_prefix": {
+          "default": null,
+          "title": "Filename Prefix",
+          "type": "string",
+          "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Persist Patrol Events"
+    },
+    "skip_map_generation": {
+      "additionalProperties": false,
+      "properties": {
+        "skip": {
+          "default": false,
+          "title": "Skip",
+          "type": "boolean",
+          "description": "Skip the following tasks if True, returning a sentinel value."
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Skip Map Generation"
+    },
     "base_map_defs": {
       "additionalProperties": false,
       "properties": {
@@ -513,61 +591,7 @@
       },
       "type": "object",
       "required": [],
-      "title": "Base Maps"
-    },
-    "patrol_traj_map_layers": {
-      "additionalProperties": false,
-      "properties": {
-        "legend": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/LegendDefinition"
-            }
-          ],
-          "default": null,
-          "title": "Legend",
-          "description": "If present, includes this layer in the map legend",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Create Trajectory Map Layers"
-    },
-    "traj_patrol_events_ecomap": {
-      "additionalProperties": false,
-      "properties": {
-        "title": {
-          "default": null,
-          "title": "Title",
-          "type": "string",
-          "description": "            The map title. Note this is the title drawn on the map canvas itself, and will result\n            in duplicate titles if set in the context of a dashboard in which the iframe/widget\n            container also has a title set on it.\n            ",
-          "ecoscope:advanced": true
-        },
-        "north_arrow_style": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/NorthArrowStyle"
-            }
-          ],
-          "default": null,
-          "title": "North Arrow Style",
-          "description": "Additional arguments for configuring the North Arrow."
-        },
-        "legend_style": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/LegendStyle"
-            }
-          ],
-          "default": null,
-          "title": "Legend Style",
-          "description": "Additional arguments for configuring the legend."
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Draw Ecomaps"
+      "title": " "
     }
   },
   "$defs": {
@@ -770,121 +794,6 @@
       "oneOf": [],
       "title": "Category",
       "type": "string"
-    },
-    "LegendDefinition": {
-      "properties": {
-        "label_column": {
-          "default": null,
-          "ecoscope:advanced": true,
-          "title": "Label Column",
-          "type": "string"
-        },
-        "color_column": {
-          "default": null,
-          "ecoscope:advanced": true,
-          "title": "Color Column",
-          "type": "string"
-        },
-        "labels": {
-          "default": null,
-          "items": {
-            "type": "string"
-          },
-          "title": "Labels",
-          "type": "array"
-        },
-        "colors": {
-          "default": null,
-          "items": {
-            "type": "string"
-          },
-          "title": "Colors",
-          "type": "array"
-        },
-        "sort": {
-          "anyOf": [
-            {
-              "enum": [
-                "ascending",
-                "descending"
-              ],
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "ecoscope:advanced": true,
-          "title": "Sort"
-        },
-        "label_suffix": {
-          "default": null,
-          "ecoscope:advanced": true,
-          "title": "Label Suffix",
-          "type": "string"
-        }
-      },
-      "title": "LegendDefinition",
-      "type": "object"
-    },
-    "LegendStyle": {
-      "properties": {
-        "placement": {
-          "default": "bottom-right",
-          "ecoscope:advanced": true,
-          "enum": [
-            "top-left",
-            "top-right",
-            "bottom-left",
-            "bottom-right",
-            "fill"
-          ],
-          "title": "Placement",
-          "type": "string"
-        },
-        "title": {
-          "default": "Legend",
-          "ecoscope:advanced": true,
-          "title": "Title",
-          "type": "string"
-        },
-        "format_title": {
-          "default": false,
-          "ecoscope:advanced": true,
-          "title": "Format Title",
-          "type": "boolean"
-        }
-      },
-      "title": "LegendStyle",
-      "type": "object"
-    },
-    "NorthArrowStyle": {
-      "properties": {
-        "placement": {
-          "default": "top-left",
-          "ecoscope:advanced": true,
-          "enum": [
-            "top-left",
-            "top-right",
-            "bottom-left",
-            "bottom-right",
-            "fill"
-          ],
-          "title": "Placement",
-          "type": "string"
-        },
-        "style": {
-          "default": {
-            "transform": "scale(0.8)"
-          },
-          "ecoscope:advanced": true,
-          "title": "Style",
-          "type": "object"
-        }
-      },
-      "title": "NorthArrowStyle",
-      "type": "object"
     }
   },
   "uiSchema": {
@@ -934,11 +843,16 @@
         "filter_point_coords"
       ]
     },
-    "traj_patrol_events_ecomap": {
+    "persist_patrol_traj": {
       "ui:order": [
-        "title",
-        "north_arrow_style",
-        "legend_style"
+        "filetypes",
+        "filename_prefix"
+      ]
+    },
+    "persist_patrol_events": {
+      "ui:order": [
+        "filetypes",
+        "filename_prefix"
       ]
     },
     "ui:order": [
@@ -953,9 +867,10 @@
       "groupers",
       "set_patrol_traj_color_column",
       "filter_patrol_events",
-      "base_map_defs",
-      "patrol_traj_map_layers",
-      "traj_patrol_events_ecomap"
+      "persist_patrol_traj",
+      "persist_patrol_events",
+      "skip_map_generation",
+      "base_map_defs"
     ]
   },
   "additionalProperties": false

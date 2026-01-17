@@ -39,6 +39,7 @@ from ecoscope_workflows_core.tasks.skip import (
     any_dependency_skipped as any_dependency_skipped,
 )
 from ecoscope_workflows_core.tasks.skip import any_is_empty_df as any_is_empty_df
+from ecoscope_workflows_core.tasks.skip import never as never
 from ecoscope_workflows_core.tasks.transformation import (
     add_temporal_index as add_temporal_index,
 )
@@ -49,6 +50,10 @@ from ecoscope_workflows_core.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
 from ecoscope_workflows_core.tasks.transformation import map_columns as map_columns
+from ecoscope_workflows_ext_custom.tasks.io import (
+    persist_df_wrapper as persist_df_wrapper,
+)
+from ecoscope_workflows_ext_custom.tasks.skip import maybe_skip_df as maybe_skip_df
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     apply_sql_query as apply_sql_query,
 )
@@ -64,7 +69,6 @@ from ecoscope_workflows_ext_ecoscope.tasks.io import (
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
     get_patrols_from_combined_params as get_patrols_from_combined_params,
 )
-from ecoscope_workflows_ext_ecoscope.tasks.io import persist_df as persist_df
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
     set_patrols_and_patrol_events_params as set_patrols_and_patrol_events_params,
 )
@@ -82,6 +86,9 @@ from ecoscope_workflows_ext_ecoscope.tasks.results import (
 )
 from ecoscope_workflows_ext_ecoscope.tasks.results import draw_ecomap as draw_ecomap
 from ecoscope_workflows_ext_ecoscope.tasks.results import set_base_maps as set_base_maps
+from ecoscope_workflows_ext_ecoscope.tasks.skip import (
+    all_geometry_are_none as all_geometry_are_none,
+)
 from ecoscope_workflows_ext_ecoscope.tasks.transformation import (
     apply_color_map as apply_color_map,
 )
@@ -1087,19 +1094,91 @@ split_pe_groups = (
 
 
 # %% [markdown]
-# ## Persist Patrol Trajectories as GPKG
+# ## Persist Patrol Trajectories
 
 # %%
 # parameters
 
-persist_traj_gpkg_params = dict()
+persist_patrol_traj_params = dict(
+    filename=...,
+    filetypes=...,
+    filename_prefix=...,
+)
 
 # %%
 # call the task
 
 
-persist_traj_gpkg = (
-    persist_df.set_task_instance_id("persist_traj_gpkg")
+persist_patrol_traj = (
+    persist_df_wrapper.set_task_instance_id("persist_patrol_traj")
+    .handle_errors()
+    .with_tracing()
+    .skipif(
+        conditions=[
+            never,
+        ],
+        unpack_depth=1,
+    )
+    .partial(
+        root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
+        sanitize=True,
+        **persist_patrol_traj_params,
+    )
+    .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+)
+
+
+# %% [markdown]
+# ## Persist Patrol Events
+
+# %%
+# parameters
+
+persist_patrol_events_params = dict(
+    filename=...,
+    filetypes=...,
+    filename_prefix=...,
+)
+
+# %%
+# call the task
+
+
+persist_patrol_events = (
+    persist_df_wrapper.set_task_instance_id("persist_patrol_events")
+    .handle_errors()
+    .with_tracing()
+    .skipif(
+        conditions=[
+            never,
+        ],
+        unpack_depth=1,
+    )
+    .partial(
+        root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
+        sanitize=True,
+        **persist_patrol_events_params,
+    )
+    .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+)
+
+
+# %% [markdown]
+# ## Skip Map Generation
+
+# %%
+# parameters
+
+skip_map_generation_params = dict(
+    skip=...,
+)
+
+# %%
+# call the task
+
+
+skip_map_generation = (
+    maybe_skip_df.set_task_instance_id("skip_map_generation")
     .handle_errors()
     .with_tracing()
     .skipif(
@@ -1109,31 +1188,25 @@ persist_traj_gpkg = (
         ],
         unpack_depth=1,
     )
-    .partial(
-        df=patrol_traj,
-        filename="patrol_trajectories",
-        filetype="gpkg",
-        root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-        **persist_traj_gpkg_params,
-    )
-    .call()
+    .partial(**skip_map_generation_params)
+    .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
 )
 
 
 # %% [markdown]
-# ## Persist Patrol Trajectories as Parquet
+# ## Set Patrol Map Title
 
 # %%
 # parameters
 
-persist_traj_parquet_params = dict()
+set_patrol_map_title_params = dict()
 
 # %%
 # call the task
 
 
-persist_traj_parquet = (
-    persist_df.set_task_instance_id("persist_traj_parquet")
+set_patrol_map_title = (
+    set_string_var.set_task_instance_id("set_patrol_map_title")
     .handle_errors()
     .with_tracing()
     .skipif(
@@ -1143,87 +1216,13 @@ persist_traj_parquet = (
         ],
         unpack_depth=1,
     )
-    .partial(
-        df=patrol_traj,
-        filename="patrol_trajectories",
-        filetype="geoparquet",
-        root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-        **persist_traj_parquet_params,
-    )
+    .partial(var="Patrol Trajectories and Events Map", **set_patrol_map_title_params)
     .call()
 )
 
 
 # %% [markdown]
-# ## Persist Patrol Events as GPKG
-
-# %%
-# parameters
-
-persist_events_gpkg_params = dict()
-
-# %%
-# call the task
-
-
-persist_events_gpkg = (
-    persist_df.set_task_instance_id("persist_events_gpkg")
-    .handle_errors()
-    .with_tracing()
-    .skipif(
-        conditions=[
-            any_is_empty_df,
-            any_dependency_skipped,
-        ],
-        unpack_depth=1,
-    )
-    .partial(
-        df=filter_patrol_events,
-        filename="patrol_events",
-        filetype="gpkg",
-        root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-        **persist_events_gpkg_params,
-    )
-    .call()
-)
-
-
-# %% [markdown]
-# ## Persist Patrol Events as Parquet
-
-# %%
-# parameters
-
-persist_events_parquet_params = dict()
-
-# %%
-# call the task
-
-
-persist_events_parquet = (
-    persist_df.set_task_instance_id("persist_events_parquet")
-    .handle_errors()
-    .with_tracing()
-    .skipif(
-        conditions=[
-            any_is_empty_df,
-            any_dependency_skipped,
-        ],
-        unpack_depth=1,
-    )
-    .partial(
-        df=filter_patrol_events,
-        filename="patrol_events",
-        filetype="geoparquet",
-        root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
-        **persist_events_parquet_params,
-    )
-    .call()
-)
-
-
-# %% [markdown]
-# ## Base Maps
+# ##
 
 # %%
 # parameters
@@ -1253,6 +1252,128 @@ base_map_defs = (
 
 
 # %% [markdown]
+# ## Rename Trajectory Columns for Display
+
+# %%
+# parameters
+
+rename_traj_display_columns_params = dict()
+
+# %%
+# call the task
+
+
+rename_traj_display_columns = (
+    map_columns.set_task_instance_id("rename_traj_display_columns")
+    .handle_errors()
+    .with_tracing()
+    .skipif(
+        conditions=[
+            any_is_empty_df,
+            any_dependency_skipped,
+        ],
+        unpack_depth=1,
+    )
+    .partial(
+        drop_columns=[],
+        retain_columns=[],
+        rename_columns={
+            "patrol_serial_number": "Patrol Serial",
+            "patrol_type": "Patrol Type",
+            "segment_start": "Start Time",
+            "timespan_seconds": "Duration (s)",
+            "speed_kmhr": "Speed (kph)",
+        },
+        **rename_traj_display_columns_params,
+    )
+    .mapvalues(argnames=["df"], argvalues=skip_map_generation)
+)
+
+
+# %% [markdown]
+# ## Rename Event Columns for Display
+
+# %%
+# parameters
+
+rename_event_display_columns_params = dict()
+
+# %%
+# call the task
+
+
+rename_event_display_columns = (
+    map_columns.set_task_instance_id("rename_event_display_columns")
+    .handle_errors()
+    .with_tracing()
+    .skipif(
+        conditions=[
+            any_is_empty_df,
+            any_dependency_skipped,
+        ],
+        unpack_depth=1,
+    )
+    .partial(
+        drop_columns=[],
+        retain_columns=[],
+        rename_columns={
+            "patrol_serial_number": "Patrol Serial",
+            "event_type": "Event Type",
+            "time": "Event Time",
+        },
+        **rename_event_display_columns_params,
+    )
+    .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+)
+
+
+# %% [markdown]
+# ## Create Trajectory Map Layers
+
+# %%
+# parameters
+
+patrol_traj_map_layers_params = dict(
+    zoom=...,
+)
+
+# %%
+# call the task
+
+
+patrol_traj_map_layers = (
+    create_polyline_layer.set_task_instance_id("patrol_traj_map_layers")
+    .handle_errors()
+    .with_tracing()
+    .skipif(
+        conditions=[
+            any_is_empty_df,
+            any_dependency_skipped,
+            all_geometry_are_none,
+        ],
+        unpack_depth=1,
+    )
+    .partial(
+        layer_style={
+            "get_width": 3,
+            "width_units": "pixels",
+            "color_column": "patrol_traj_colormap",
+        },
+        legend={"label_column": "Patrol Type", "color_column": "patrol_traj_colormap"},
+        tooltip_columns=[
+            "Patrol Serial",
+            "Patrol Type",
+            "Start Time",
+            "Duration (s)",
+            "Speed (kph)",
+        ],
+        **patrol_traj_map_layers_params,
+    )
+    .mapvalues(argnames=["geodataframe"], argvalues=rename_traj_display_columns)
+)
+
+
+# %% [markdown]
 # ## Create Event Map Layers
 
 # %%
@@ -1274,60 +1395,22 @@ patrol_events_map_layers = (
         conditions=[
             any_is_empty_df,
             any_dependency_skipped,
+            all_geometry_are_none,
         ],
         unpack_depth=1,
     )
     .partial(
-        layer_style={"fill_color_column": "event_type_colormap"},
-        legend=None,
-        tooltip_columns=["patrol_serial_number", "event_type", "time"],
+        layer_style={"fill_color_column": "event_type_colormap", "get_radius": 5},
+        legend={"label_column": "Event Type", "color_column": "event_type_colormap"},
+        tooltip_columns=["Patrol Serial", "Event Type", "Event Time"],
         **patrol_events_map_layers_params,
     )
-    .mapvalues(argnames=["geodataframe"], argvalues=split_pe_groups)
+    .mapvalues(argnames=["geodataframe"], argvalues=rename_event_display_columns)
 )
 
 
 # %% [markdown]
-# ## Create Trajectory Map Layers
-
-# %%
-# parameters
-
-patrol_traj_map_layers_params = dict(
-    legend=...,
-    zoom=...,
-)
-
-# %%
-# call the task
-
-
-patrol_traj_map_layers = (
-    create_polyline_layer.set_task_instance_id("patrol_traj_map_layers")
-    .handle_errors()
-    .with_tracing()
-    .skipif(
-        conditions=[
-            any_is_empty_df,
-            any_dependency_skipped,
-        ],
-        unpack_depth=1,
-    )
-    .partial(
-        layer_style={
-            "get_width": 3,
-            "width_units": "pixels",
-            "color_column": "patrol_traj_colormap",
-        },
-        tooltip_columns=["patrol_serial_number", "patrol_type"],
-        **patrol_traj_map_layers_params,
-    )
-    .mapvalues(argnames=["geodataframe"], argvalues=split_patrol_traj_groups)
-)
-
-
-# %% [markdown]
-# ## Combine Trajectories and Patrol Events layers
+# ## Combine Trajectories and Patrol Events Layers
 
 # %%
 # parameters
@@ -1363,11 +1446,7 @@ combined_traj_and_pe_map_layers = (
 # parameters
 
 traj_patrol_events_ecomap_params = dict(
-    title=...,
-    north_arrow_style=...,
-    legend_style=...,
     view_state=...,
-    widget_id=...,
 )
 
 # %%
@@ -1386,9 +1465,17 @@ traj_patrol_events_ecomap = (
         unpack_depth=1,
     )
     .partial(
+        title=None,
         tile_layers=base_map_defs,
+        north_arrow_style={"placement": "top-left"},
+        legend_style={
+            "title": "Legend",
+            "format_title": False,
+            "placement": "bottom-right",
+        },
         static=False,
         max_zoom=20,
+        widget_id=set_patrol_map_title,
         **traj_patrol_events_ecomap_params,
     )
     .mapvalues(argnames=["geo_layers"], argvalues=combined_traj_and_pe_map_layers)
@@ -1449,15 +1536,11 @@ traj_pe_map_widgets_single_views = (
     .with_tracing()
     .skipif(
         conditions=[
-            any_is_empty_df,
-            any_dependency_skipped,
+            never,
         ],
         unpack_depth=1,
     )
-    .partial(
-        title="Combined Patrol Events and Trajectories",
-        **traj_pe_map_widgets_single_views_params,
-    )
+    .partial(title=set_patrol_map_title, **traj_pe_map_widgets_single_views_params)
     .map(argnames=["view", "data"], argvalues=traj_pe_ecomap_html_urls)
 )
 
