@@ -18,7 +18,14 @@ class WorkflowDetails(BaseModel):
     description: Optional[str] = Field("", title="Workflow Description")
 
 
-class ErPatrolTypes(BaseModel):
+class StatusEnum(str, Enum):
+    active = "active"
+    overdue = "overdue"
+    done = "done"
+    cancelled = "cancelled"
+
+
+class ErPatrolAndEventsParams(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -27,59 +34,42 @@ class ErPatrolTypes(BaseModel):
         description="Specify the patrol type(s) to analyze (optional). Leave empty to analyze all patrol types.",
         title="Patrol Types",
     )
-
-
-class StatusEnum(str, Enum):
-    active = "active"
-    overdue = "overdue"
-    done = "done"
-    cancelled = "cancelled"
-
-
-class ErPatrolStatus(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
+    event_types: List[str] = Field(
+        ...,
+        description="Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types.",
+        title="Event Types",
     )
     status: Optional[List[StatusEnum]] = Field(
         ["done"],
         description="Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
         title="Patrol Status",
     )
-
-
-class PatrolObs(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    sub_page_size: Optional[int] = Field(
-        None,
-        description="        Manually set the page size for underlying ER API requests.\n        If left as None, this will use the underlying client default value (4000)\n        ",
-        title="Sub Page Size",
-    )
-
-
-class FetchPatrolEvents(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    event_types: List[str] = Field(
-        ...,
-        description="Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types.",
-        title="Event Types",
-    )
     include_null_geometry: Optional[bool] = Field(
         True, title="Include Events Without a Geometry (point or polygon)"
     )
-    sub_page_size: Optional[int] = Field(
+
+
+class SqlQueryTraj(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    query: Optional[str] = Field(
+        "",
+        description="SQL query string to apply to the DataFrame. Leaves it unchanged when the field is emptyUse 'df' as the table name in the query.",
+        title="Query",
+    )
+    columns: Optional[List[str]] = Field(
         None,
-        description="        Manually set the page size for underlying ER API requests.\n        If left as None, this will use the underlying client default value (4000)\n        ",
-        title="Sub Page Size",
+        description="Optional list of column names to include in the SQL query context. If specified, only these columns will be available in the 'df' table for querying. Use this to exclude columns with unsupported data types (list, dict) that cannot be stored in SQLite. If not specified, all columns are included.",
+        title="Columns",
     )
-    include_display_values: Optional[bool] = Field(
-        True,
-        description="Whether or not to include display values for event types",
-        title="Include Display Values",
+
+
+class SetPatrolTrajColorColumn(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
     )
+    var: str = Field(..., title="")
 
 
 class Url(str, Enum):
@@ -259,12 +249,16 @@ class TimezoneInfo(BaseModel):
     utc: str = Field(..., title="Utc")
 
 
-class TemporalGrouper(RootModel[str]):
-    root: str = Field(..., title="Time")
+class BoundingBox(BaseModel):
+    min_y: Optional[float] = Field(-90.0, title="Min Latitude")
+    max_y: Optional[float] = Field(90.0, title="Max Latitude")
+    min_x: Optional[float] = Field(-180.0, title="Min Longitude")
+    max_x: Optional[float] = Field(180.0, title="Max Longitude")
 
 
-class ValueGrouper(RootModel[str]):
-    root: str = Field(..., title="Category")
+class Coordinate(BaseModel):
+    y: float = Field(..., description="Example -0.15293", title="Latitude")
+    x: float = Field(..., description="Example 37.30906", title="Longitude")
 
 
 class TrajectorySegmentFilter(BaseModel):
@@ -288,16 +282,17 @@ class TrajectorySegmentFilter(BaseModel):
     )
 
 
-class BoundingBox(BaseModel):
-    min_y: Optional[float] = Field(-90.0, title="Min Latitude")
-    max_y: Optional[float] = Field(90.0, title="Max Latitude")
-    min_x: Optional[float] = Field(-180.0, title="Min Longitude")
-    max_x: Optional[float] = Field(180.0, title="Max Longitude")
+class RenameColumn(BaseModel):
+    original_name: str = Field(..., title="Original Name")
+    new_name: str = Field(..., title="New Name")
 
 
-class Coordinate(BaseModel):
-    y: float = Field(..., description="Example -0.15293", title="Latitude")
-    x: float = Field(..., description="Example 37.30906", title="Longitude")
+class TemporalGrouper(RootModel[str]):
+    root: str = Field(..., title="Time")
+
+
+class ValueGrouper(RootModel[str]):
+    root: str = Field(..., title="Category")
 
 
 class Sort(str, Enum):
@@ -351,14 +346,21 @@ class TimeRange(BaseModel):
     timezone: Optional[TimezoneInfo] = Field(None, title="Timezone")
 
 
-class Groupers(BaseModel):
+class FilterPatrolObs(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    groupers: Optional[List[Union[ValueGrouper, TemporalGrouper]]] = Field(
-        None,
-        description="            Specify how the data should be grouped to create the views for your dashboard or persisted data.\n            This field is optional; if left blank, all the data will appear in a single view.\n            ",
-        title=" ",
+    bounding_box: Optional[BoundingBox] = Field(
+        default_factory=lambda: BoundingBox.model_validate(
+            {"min_y": -90.0, "max_y": 90.0, "min_x": -180.0, "max_x": 180.0}
+        ),
+        description="Filter coordinates to be inside these bounding coordinates.",
+        title="Bounding Box",
+    )
+    filter_point_coords: Optional[List[Coordinate]] = Field(
+        [],
+        description="By adding a filter, the workflow will not include events recorded at the specified coordinates.",
+        title="Filter Exact Point Coordinates",
     )
 
 
@@ -382,24 +384,31 @@ class PatrolTraj(BaseModel):
     )
 
 
-class FilterFetchedPatrolEvents(BaseModel):
+class CustomizeColumnsTraj(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    bounding_box: Optional[BoundingBox] = Field(
-        default_factory=lambda: BoundingBox.model_validate(
-            {"min_y": -90.0, "max_y": 90.0, "min_x": -180.0, "max_x": 180.0}
-        ),
-        description="Filter coordinates to be inside these bounding coordinates.",
-        title="Bounding Box",
+    drop_columns: Optional[List[str]] = Field(
+        [], description="List of columns to drop.", title="Drop Columns"
     )
-    filter_point_coords: Optional[List[Coordinate]] = Field(
+    retain_columns: Optional[List[str]] = Field(
         [],
-        description="By adding a filter, the workflow will not include events recorded at the specified coordinates.",
-        title="Filter Exact Point Coordinates",
+        description="List of columns to retain with the order specified by the list.\n                        Keep all the columns if the list is empty.",
+        title="Retain Columns",
     )
-    reset_index: Optional[bool] = Field(
-        True, description="Reset index after filtering", title="Reset Index"
+    rename_columns: Optional[List[RenameColumn]] = Field(
+        {}, description="Dictionary of columns to rename.", title="Rename Columns"
+    )
+
+
+class Groupers(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    groupers: Optional[List[Union[ValueGrouper, TemporalGrouper]]] = Field(
+        None,
+        description="            Specify how the data should be grouped to create the views for your dashboard or persisted data.\n            This field is optional; if left blank, all the data will appear in a single view.\n            ",
+        title=" ",
     )
 
 
@@ -418,9 +427,6 @@ class FilterPatrolEvents(BaseModel):
         [],
         description="By adding a filter, the workflow will not include events recorded at the specified coordinates.",
         title="Filter Exact Point Coordinates",
-    )
-    reset_index: Optional[bool] = Field(
-        True, description="Reset index after filtering", title="Reset Index"
     )
 
 
@@ -469,14 +475,20 @@ class Params(BaseModel):
     time_range: Optional[TimeRange] = Field(
         None, description="Choose the period of time to analyze.", title="Time Range"
     )
-    er_patrol_types: Optional[ErPatrolTypes] = Field(None, title="")
-    er_patrol_status: Optional[ErPatrolStatus] = Field(None, title="")
-    patrol_obs: Optional[PatrolObs] = Field(None, title="")
-    fetch_patrol_events: Optional[FetchPatrolEvents] = Field(None, title="")
+    er_patrol_and_events_params: Optional[ErPatrolAndEventsParams] = Field(
+        None, title=""
+    )
+    filter_patrol_obs: Optional[FilterPatrolObs] = Field(
+        None, title="Filter Observation Relocations"
+    )
+    patrol_traj: Optional[PatrolTraj] = Field(None, title="Trajectory Segment Filter")
+    customize_columns_traj: Optional[CustomizeColumnsTraj] = Field(
+        None, title="Process Columns"
+    )
+    sql_query_traj: Optional[SqlQueryTraj] = Field(None, title="Apply SQL Query")
     groupers: Optional[Groupers] = Field(None, title="Group Data")
-    patrol_traj: Optional[PatrolTraj] = Field(None, title="Trajectories")
-    filter_fetched_patrol_events: Optional[FilterFetchedPatrolEvents] = Field(
-        None, title="Apply Coordinate Filter"
+    set_patrol_traj_color_column: Optional[SetPatrolTrajColorColumn] = Field(
+        None, title="Style Trajectory By Category"
     )
     filter_patrol_events: Optional[FilterPatrolEvents] = Field(
         None, title="Apply Coordinate Filter"

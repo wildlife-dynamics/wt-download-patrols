@@ -39,8 +39,9 @@ SNAPSHOT_DIFF_OUTPUT_DIRNAME = ARTIFACTS.parent / "__diff_output__"
 TEST_CASES_YAML = ARTIFACTS.parent / "test-cases.yaml"
 MATCHSPEC_OVERRIDE = "ecoscope-workflows-download-patrols-workflow"
 IO_TASKS_IMPORTABLE_REFERENCES = [
-    "ecoscope_workflows_ext_ecoscope.tasks.io.get_patrol_observations",
-    "ecoscope_workflows_ext_ecoscope.tasks.io.get_patrol_events",
+    "ecoscope_workflows_ext_ecoscope.tasks.io.get_patrols_from_combined_params",
+    "ecoscope_workflows_ext_ecoscope.tasks.io.get_patrol_observations_from_patrols_df_and_combined_params",
+    "ecoscope_workflows_ext_ecoscope.tasks.io.get_event_type_display_names_from_events",
 ]
 
 yaml = ruamel.yaml.YAML(typ="safe")

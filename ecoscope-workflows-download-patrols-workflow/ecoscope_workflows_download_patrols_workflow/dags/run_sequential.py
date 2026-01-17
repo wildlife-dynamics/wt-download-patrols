@@ -6,6 +6,9 @@ from ecoscope_workflows_core.tasks.config import set_string_var as set_string_va
 from ecoscope_workflows_core.tasks.config import (
     set_workflow_details as set_workflow_details,
 )
+from ecoscope_workflows_core.tasks.filter import (
+    get_timezone_from_time_range as get_timezone_from_time_range,
+)
 from ecoscope_workflows_core.tasks.filter import set_time_range as set_time_range
 from ecoscope_workflows_core.tasks.groupby import groupbykey as groupbykey
 from ecoscope_workflows_core.tasks.groupby import set_groupers as set_groupers
@@ -32,22 +35,31 @@ from ecoscope_workflows_core.tasks.transformation import (
 from ecoscope_workflows_core.tasks.transformation import (
     convert_column_values_to_string as convert_column_values_to_string,
 )
+from ecoscope_workflows_core.tasks.transformation import (
+    convert_values_to_timezone as convert_values_to_timezone,
+)
 from ecoscope_workflows_core.tasks.transformation import map_columns as map_columns
-from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    get_patrol_events as get_patrol_events,
+from ecoscope_workflows_ext_custom.tasks.transformation import (
+    apply_sql_query as apply_sql_query,
+)
+from ecoscope_workflows_ext_custom.tasks.transformation import (
+    drop_column_prefix as drop_column_prefix,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    get_patrol_observations as get_patrol_observations,
+    get_event_type_display_names_from_events as get_event_type_display_names_from_events,
+)
+from ecoscope_workflows_ext_ecoscope.tasks.io import (
+    get_patrol_observations_from_patrols_df_and_combined_params as get_patrol_observations_from_patrols_df_and_combined_params,
+)
+from ecoscope_workflows_ext_ecoscope.tasks.io import (
+    get_patrols_from_combined_params as get_patrols_from_combined_params,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.io import persist_df as persist_df
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    set_patrol_status as set_patrol_status,
+    set_patrols_and_patrol_events_params as set_patrols_and_patrol_events_params,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    set_patrol_types as set_patrol_types,
-)
-from ecoscope_workflows_ext_ecoscope.tasks.preprocessing import (
-    process_relocations as process_relocations,
+    unpack_events_from_patrols_df_and_combined_params as unpack_events_from_patrols_df_and_combined_params,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.preprocessing import (
     relocations_to_trajectory as relocations_to_trajectory,
@@ -123,9 +135,9 @@ def main(params: Params):
         .call()
     )
 
-    er_patrol_types = (
-        set_patrol_types.validate()
-        .set_task_instance_id("er_patrol_types")
+    er_patrol_and_events_params = (
+        set_patrols_and_patrol_events_params.validate()
+        .set_task_instance_id("er_patrol_and_events_params")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -135,13 +147,21 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("er_patrol_types") or {}))
+        .partial(
+            client=er_client_name,
+            time_range=time_range,
+            include_patrol_details=True,
+            raise_on_empty=False,
+            truncate_to_time_range=True,
+            sub_page_size=100,
+            **(params_dict.get("er_patrol_and_events_params") or {}),
+        )
         .call()
     )
 
-    er_patrol_status = (
-        set_patrol_status.validate()
-        .set_task_instance_id("er_patrol_status")
+    prefetch_patrols = (
+        get_patrols_from_combined_params.validate()
+        .set_task_instance_id("prefetch_patrols")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -151,12 +171,15 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("er_patrol_status") or {}))
+        .partial(
+            combined_params=er_patrol_and_events_params,
+            **(params_dict.get("prefetch_patrols") or {}),
+        )
         .call()
     )
 
     patrol_obs = (
-        get_patrol_observations.validate()
+        get_patrol_observations_from_patrols_df_and_combined_params.validate()
         .set_task_instance_id("patrol_obs")
         .handle_errors()
         .with_tracing()
@@ -168,20 +191,36 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            client=er_client_name,
-            time_range=time_range,
-            patrol_types=er_patrol_types,
-            status=er_patrol_status,
-            include_patrol_details=True,
-            raise_on_empty=False,
+            patrols_df=prefetch_patrols,
+            combined_params=er_patrol_and_events_params,
             **(params_dict.get("patrol_obs") or {}),
         )
         .call()
     )
 
-    fetch_patrol_events = (
-        get_patrol_events.validate()
-        .set_task_instance_id("fetch_patrol_events")
+    patrol_events = (
+        unpack_events_from_patrols_df_and_combined_params.validate()
+        .set_task_instance_id("patrol_events")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            patrols_df=prefetch_patrols,
+            combined_params=er_patrol_and_events_params,
+            **(params_dict.get("patrol_events") or {}),
+        )
+        .call()
+    )
+
+    event_type_display_names = (
+        get_event_type_display_names_from_events.validate()
+        .set_task_instance_id("event_type_display_names")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -193,13 +232,207 @@ def main(params: Params):
         )
         .partial(
             client=er_client_name,
-            time_range=time_range,
-            patrol_types=er_patrol_types,
-            status=er_patrol_status,
-            truncate_to_time_range=True,
-            raise_on_empty=False,
-            **(params_dict.get("fetch_patrol_events") or {}),
+            events_gdf=patrol_events,
+            append_category_names="duplicates",
+            **(params_dict.get("event_type_display_names") or {}),
         )
+        .call()
+    )
+
+    get_timezone = (
+        get_timezone_from_time_range.validate()
+        .set_task_instance_id("get_timezone")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(time_range=time_range, **(params_dict.get("get_timezone") or {}))
+        .call()
+    )
+
+    convert_patrols_to_user_timezone = (
+        convert_values_to_timezone.validate()
+        .set_task_instance_id("convert_patrols_to_user_timezone")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=patrol_obs,
+            timezone=get_timezone,
+            columns=["fixtime"],
+            **(params_dict.get("convert_patrols_to_user_timezone") or {}),
+        )
+        .call()
+    )
+
+    convert_events_to_user_timezone = (
+        convert_values_to_timezone.validate()
+        .set_task_instance_id("convert_events_to_user_timezone")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=patrol_events,
+            timezone=get_timezone,
+            columns=["time"],
+            **(params_dict.get("convert_events_to_user_timezone") or {}),
+        )
+        .call()
+    )
+
+    drop_extra_prefix_obs = (
+        drop_column_prefix.validate()
+        .set_task_instance_id("drop_extra_prefix_obs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=convert_patrols_to_user_timezone,
+            prefix="extra__",
+            duplicate_strategy="suffix",
+            **(params_dict.get("drop_extra_prefix_obs") or {}),
+        )
+        .call()
+    )
+
+    filter_patrol_obs = (
+        apply_reloc_coord_filter.validate()
+        .set_task_instance_id("filter_patrol_obs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_extra_prefix_obs,
+            roi_gdf=None,
+            roi_name=None,
+            reset_index=False,
+            **(params_dict.get("filter_patrol_obs") or {}),
+        )
+        .call()
+    )
+
+    patrol_traj = (
+        relocations_to_trajectory.validate()
+        .set_task_instance_id("patrol_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            relocations=filter_patrol_obs, **(params_dict.get("patrol_traj") or {})
+        )
+        .call()
+    )
+
+    drop_extra_prefix_traj = (
+        drop_column_prefix.validate()
+        .set_task_instance_id("drop_extra_prefix_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=patrol_traj,
+            prefix="extra__",
+            duplicate_strategy="suffix",
+            **(params_dict.get("drop_extra_prefix_traj") or {}),
+        )
+        .call()
+    )
+
+    customize_columns_internally = (
+        map_columns.validate()
+        .set_task_instance_id("customize_columns_internally")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_extra_prefix_traj,
+            rename_columns={},
+            drop_columns=["id"],
+            retain_columns=[],
+            **(params_dict.get("customize_columns_internally") or {}),
+        )
+        .call()
+    )
+
+    customize_columns_traj = (
+        map_columns.validate()
+        .set_task_instance_id("customize_columns_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=customize_columns_internally,
+            **(params_dict.get("customize_columns_traj") or {}),
+        )
+        .call()
+    )
+
+    sql_query_traj = (
+        apply_sql_query.validate()
+        .set_task_instance_id("sql_query_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(df=customize_columns_traj, **(params_dict.get("sql_query_traj") or {}))
         .call()
     )
 
@@ -219,45 +452,6 @@ def main(params: Params):
         .call()
     )
 
-    patrol_reloc = (
-        process_relocations.validate()
-        .set_task_instance_id("patrol_reloc")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            observations=patrol_obs,
-            relocs_columns=[
-                "patrol_id",
-                "patrol_start_time",
-                "patrol_end_time",
-                "patrol_type__value",
-                "patrol_type__display",
-                "patrol_serial_number",
-                "patrol_status",
-                "patrol_subject",
-                "groupby_col",
-                "fixtime",
-                "junk_status",
-                "extra__source",
-                "geometry",
-            ],
-            filter_point_coords=[
-                {"x": 180.0, "y": 90.0},
-                {"x": 0.0, "y": 0.0},
-                {"x": 1.0, "y": 1.0},
-            ],
-            **(params_dict.get("patrol_reloc") or {}),
-        )
-        .call()
-    )
-
     set_patrol_traj_color_column = (
         set_string_var.validate()
         .set_task_instance_id("set_patrol_traj_color_column")
@@ -270,25 +464,7 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(
-            var="patrol_type", **(params_dict.get("set_patrol_traj_color_column") or {})
-        )
-        .call()
-    )
-
-    patrol_traj = (
-        relocations_to_trajectory.validate()
-        .set_task_instance_id("patrol_traj")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(relocations=patrol_reloc, **(params_dict.get("patrol_traj") or {}))
+        .partial(**(params_dict.get("set_patrol_traj_color_column") or {}))
         .call()
     )
 
@@ -305,39 +481,12 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=patrol_traj,
-            time_col="extra__patrol_start_time",
+            df=sql_query_traj,
+            time_col="segment_start",
             groupers=groupers,
             cast_to_datetime=True,
             format="mixed",
             **(params_dict.get("traj_add_temporal_index") or {}),
-        )
-        .call()
-    )
-
-    traj_rename_grouper_columns = (
-        map_columns.validate()
-        .set_task_instance_id("traj_rename_grouper_columns")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=traj_add_temporal_index,
-            drop_columns=[],
-            retain_columns=[],
-            rename_columns={
-                "extra__patrol_type__value": "patrol_type",
-                "extra__patrol_serial_number": "patrol_serial_number",
-                "extra__patrol_status": "patrol_status",
-                "extra__patrol_subject": "patrol_subject",
-            },
-            **(params_dict.get("traj_rename_grouper_columns") or {}),
         )
         .call()
     )
@@ -355,7 +504,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=traj_rename_grouper_columns,
+            df=traj_add_temporal_index,
             colormap=[
                 "#FF9600",
                 "#F23B0E",
@@ -381,9 +530,9 @@ def main(params: Params):
         .call()
     )
 
-    filter_fetched_patrol_events = (
-        apply_reloc_coord_filter.validate()
-        .set_task_instance_id("filter_fetched_patrol_events")
+    drop_extra_prefix_events = (
+        drop_column_prefix.validate()
+        .set_task_instance_id("drop_extra_prefix_events")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -394,10 +543,32 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=fetch_patrol_events,
+            df=convert_events_to_user_timezone,
+            prefix="extra__",
+            duplicate_strategy="suffix",
+            **(params_dict.get("drop_extra_prefix_events") or {}),
+        )
+        .call()
+    )
+
+    filter_patrol_events = (
+        apply_reloc_coord_filter.validate()
+        .set_task_instance_id("filter_patrol_events")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=drop_extra_prefix_events,
             roi_gdf=None,
             roi_name=None,
-            **(params_dict.get("filter_fetched_patrol_events") or {}),
+            reset_index=True,
+            **(params_dict.get("filter_patrol_events") or {}),
         )
         .call()
     )
@@ -415,7 +586,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=filter_fetched_patrol_events,
+            df=filter_patrol_events,
             time_col="patrol_start_time",
             groupers=groupers,
             cast_to_datetime=True,
@@ -483,27 +654,6 @@ def main(params: Params):
             df=pe_colormap,
             columns=["patrol_serial_number", "patrol_type"],
             **(params_dict.get("pe_cols_to_string") or {}),
-        )
-        .call()
-    )
-
-    filter_patrol_events = (
-        apply_reloc_coord_filter.validate()
-        .set_task_instance_id("filter_patrol_events")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=fetch_patrol_events,
-            roi_gdf=None,
-            roi_name=None,
-            **(params_dict.get("filter_patrol_events") or {}),
         )
         .call()
     )

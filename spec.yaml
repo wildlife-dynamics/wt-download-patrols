@@ -31,178 +31,196 @@ workflow:
 
   - title: Patrol and Event Types
     type: task-group
-    description: Patrol Events
+    description: " "
     tasks:
-      - id: er_patrol_types
-        task: set_patrol_types
-      - id: er_patrol_status
-        task: set_patrol_status
-      - id: patrol_obs
-        task: get_patrol_observations
+      - id: er_patrol_and_events_params
+        task: set_patrols_and_patrol_events_params
         partial:
           client: ${{ workflow.er_client_name.return }}
           time_range: ${{ workflow.time_range.return }}
-          patrol_types: ${{ workflow.er_patrol_types.return }}
-          status: ${{ workflow.er_patrol_status.return }}
           include_patrol_details: true
           raise_on_empty: false
-      - id: fetch_patrol_events
-        task: get_patrol_events
+          truncate_to_time_range: true
+          sub_page_size: 100
+      - id: prefetch_patrols
+        task: get_patrols_from_combined_params
+        partial:
+          combined_params: ${{ workflow.er_patrol_and_events_params.return }}
+      - id: patrol_obs
+        task: get_patrol_observations_from_patrols_df_and_combined_params
+        partial:
+          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          combined_params: ${{ workflow.er_patrol_and_events_params.return }}
+      - id: patrol_events
+        task: unpack_events_from_patrols_df_and_combined_params
+        partial:
+          patrols_df: ${{ workflow.prefetch_patrols.return }}
+          combined_params: ${{ workflow.er_patrol_and_events_params.return }}
+      - id: event_type_display_names
+        task: get_event_type_display_names_from_events
         partial:
           client: ${{ workflow.er_client_name.return }}
-          time_range: ${{ workflow.time_range.return }}
-          patrol_types: ${{ workflow.er_patrol_types.return }}
-          status: ${{ workflow.er_patrol_status.return }}
-          truncate_to_time_range: true
-          raise_on_empty: false
+          events_gdf: ${{ workflow.patrol_events.return }}
+          append_category_names: "duplicates"
 
-  - name: Group Data
-    id: groupers
-    task: set_groupers
+  - name: Extract Timezone Selection
+    id: get_timezone
+    task: get_timezone_from_time_range
+    partial:
+      time_range: ${{ workflow.time_range.return }}
 
-  - title: Preprocess patrol observations
+  - name: Convert Patrol Observations to Timezone
+    id: convert_patrols_to_user_timezone
+    task: convert_values_to_timezone
+    partial:
+      df: ${{ workflow.patrol_obs.return }}
+      timezone: ${{ workflow.get_timezone.return }}
+      columns: ["fixtime"]
+
+  - name: Convert Patrol Events to Timezone
+    id: convert_events_to_user_timezone
+    task: convert_values_to_timezone
+    partial:
+      df: ${{ workflow.patrol_events.return }}
+      timezone: ${{ workflow.get_timezone.return }}
+      columns: ["time"]
+
+  - title: Process Patrol Observations
     type: task-group
-    description: Preprocessing patrol obs
+    description: >-
+      Process patrol observations by applying filters, column transformations, and SQL queries.
     tasks:
-      - name: Transform Observations to Relocations
-        id: patrol_reloc
-        task: process_relocations
+      - name: Remove Column Prefix Extra
+        id: drop_extra_prefix_obs
+        task: drop_column_prefix
         partial:
-          observations: ${{ workflow.patrol_obs.return }}
-          relocs_columns:
-            - patrol_id
-            - patrol_start_time
-            - patrol_end_time
-            - patrol_type__value
-            - patrol_type__display
-            - patrol_serial_number
-            - patrol_status
-            - patrol_subject
-            - groupby_col
-            - fixtime
-            - junk_status
-            - extra__source
-            - geometry
-          filter_point_coords:
-            - {x: 180.0, y: 90.0}
-            - {x: 0.0, y: 0.0}
-            - {x: 1.0, y: 1.0}
-      
-      - name: Style Trajectory By Category
-        id: set_patrol_traj_color_column
-        task: set_string_var
+          df: ${{ workflow.convert_patrols_to_user_timezone.return }}
+          prefix: "extra__"
+          duplicate_strategy: "suffix"
+
+      - name: Filter Observation Relocations
+        id: filter_patrol_obs
+        task: apply_reloc_coord_filter
         partial:
-          var: patrol_type
-      
-      - name: Trajectories
+          df: ${{ workflow.drop_extra_prefix_obs.return }}
+          roi_gdf: null
+          roi_name: null
+          reset_index: false
+
+      - name: Trajectory Segment Filter
         id: patrol_traj
         task: relocations_to_trajectory
         partial:
-          relocations: ${{ workflow.patrol_reloc.return }}
+          relocations: ${{ workflow.filter_patrol_obs.return }}
+
+      - name: Remove Column Prefix Extra
+        id: drop_extra_prefix_traj
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.patrol_traj.return }}
+          prefix: "extra__"
+          duplicate_strategy: "suffix"
+
+      - name: Internally Process Columns
+        id: customize_columns_internally
+        task: map_columns
+        partial:
+          df: ${{ workflow.drop_extra_prefix_traj.return }}
+          rename_columns: {}
+          drop_columns: ["id"]
+          retain_columns: []
+
+      - name: Process Columns
+        id: customize_columns_traj
+        task: map_columns
+        partial:
+          df: ${{ workflow.customize_columns_internally.return }}
+
+      - name: Apply SQL Query
+        id: sql_query_traj
+        task: apply_sql_query
+        partial:
+          df: ${{ workflow.customize_columns_traj.return }}
+
+      - name: Group Data
+        id: groupers
+        task: set_groupers
+
+      - name: Style Trajectory By Category
+        id: set_patrol_traj_color_column
+        task: set_string_var
 
       - name: Add temporal index to Patrol Trajectories
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
-          df: ${{ workflow.patrol_traj.return }}
-          time_col: extra__patrol_start_time
+          df: ${{ workflow.sql_query_traj.return }}
+          time_col: "segment_start"
           groupers: ${{ workflow.groupers.return }}
           cast_to_datetime: true
-          format: mixed
-
-      - name: Rename value grouper columns for Trajectories
-        id: traj_rename_grouper_columns
-        task: map_columns
-        partial:
-          df: ${{ workflow.traj_add_temporal_index.return }}
-          drop_columns: []
-          retain_columns: []
-          rename_columns:
-            extra__patrol_type__value: patrol_type
-            extra__patrol_serial_number: patrol_serial_number
-            extra__patrol_status: patrol_status
-            extra__patrol_subject: patrol_subject
+          format: "mixed"
 
       - name: Patrol Traj Colormap
         id: traj_colormap
         task: apply_color_map
         partial:
-          df: ${{ workflow.traj_rename_grouper_columns.return }}
-          colormap:
-            - '#FF9600'
-            - '#F23B0E'
-            - '#A100CB'
-            - '#F04564'
-            - '#03421A'
-            - '#3089FF'
-            - '#E26FFF'
-            - '#8C1700'
-            - '#002960'
-            - '#FFD000'
-            - '#B62879'
-            - '#680078'
-            - '#005A56'
-            - '#0056C7'
-            - '#331878'
-            - '#E76826'
+          df: ${{ workflow.traj_add_temporal_index.return }}
+          colormap: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
           input_column_name: ${{ workflow.set_patrol_traj_color_column.return }}
-          output_column_name: patrol_traj_colormap
-  - title: Preprocess patrol events
+          output_column_name: "patrol_traj_colormap"
+  - title: Process Patrol Events
     type: task-group
-    description: Preprocess patrol events from EarthRanger.
+    description: >-
+      Process patrol events by applying filters.
     tasks:
+      - name: Remove Column Prefix Extra
+        id: drop_extra_prefix_events
+        task: drop_column_prefix
+        partial:
+          df: ${{ workflow.convert_events_to_user_timezone.return }}
+          prefix: "extra__"
+          duplicate_strategy: "suffix"
+
       - name: Apply Coordinate Filter
-        id: filter_fetched_patrol_events
+        id: filter_patrol_events
         task: apply_reloc_coord_filter
         partial:
-          df: ${{ workflow.fetch_patrol_events.return }}
+          df: ${{ workflow.drop_extra_prefix_events.return }}
           roi_gdf: null
           roi_name: null
+          reset_index: true
+
       - name: Add temporal index to Patrol Events
         id: pe_add_temporal_index
         task: add_temporal_index
         partial:
-          df: ${{ workflow.filter_fetched_patrol_events.return }}
-          time_col: patrol_start_time
+          df: ${{ workflow.filter_patrol_events.return }}
+          time_col: "patrol_start_time"
           groupers: ${{ workflow.groupers.return }}
           cast_to_datetime: true
-          format: mixed
+          format: "mixed"
+
       - name: Patrol Events Colormap
         id: pe_colormap
         task: apply_color_map
         partial:
           df: ${{ workflow.pe_add_temporal_index.return }}
-          input_column_name: event_type
-          colormap: tab20b
-          output_column_name: event_type_colormap
+          input_column_name: "event_type"
+          colormap: "tab20b"
+          output_column_name: "event_type_colormap"
   - name: Cast Patrol Trajectory Columns
     id: patrol_traj_cols_to_string
     task: convert_column_values_to_string
     partial:
       df: ${{ workflow.traj_colormap.return }}
-      columns:
-        - patrol_serial_number
-        - patrol_type
+      columns: ["patrol_serial_number", "patrol_type"]
+
   - name: Cast Patrol Events Columns
     id: pe_cols_to_string
     task: convert_column_values_to_string
     partial:
       df: ${{ workflow.pe_colormap.return }}
-      columns:
-        - patrol_serial_number
-        - patrol_type
-  - title: Preprocess patrol events
-    type: task-group
-    description: patrol events oo12
-    tasks:
-      - name: Apply Coordinate Filter
-        id: filter_patrol_events
-        task: apply_reloc_coord_filter
-        partial:
-          df: ${{ workflow.fetch_patrol_events.return }}
-          roi_gdf: null
-          roi_name: null
-
+      columns: ["patrol_serial_number", "patrol_type"]
   - name: Split Patrol Trajectories by Group
     id: split_patrol_traj_groups
     task: split_groups

@@ -7,6 +7,9 @@ from ecoscope_workflows_core.tasks.config import set_string_var as set_string_va
 from ecoscope_workflows_core.tasks.config import (
     set_workflow_details as set_workflow_details,
 )
+from ecoscope_workflows_core.tasks.filter import (
+    get_timezone_from_time_range as get_timezone_from_time_range,
+)
 from ecoscope_workflows_core.tasks.filter import set_time_range as set_time_range
 from ecoscope_workflows_core.tasks.groupby import groupbykey as groupbykey
 from ecoscope_workflows_core.tasks.groupby import set_groupers as set_groupers
@@ -33,22 +36,31 @@ from ecoscope_workflows_core.tasks.transformation import (
 from ecoscope_workflows_core.tasks.transformation import (
     convert_column_values_to_string as convert_column_values_to_string,
 )
+from ecoscope_workflows_core.tasks.transformation import (
+    convert_values_to_timezone as convert_values_to_timezone,
+)
 from ecoscope_workflows_core.tasks.transformation import map_columns as map_columns
-from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    get_patrol_events as get_patrol_events,
+from ecoscope_workflows_ext_custom.tasks.transformation import (
+    apply_sql_query as apply_sql_query,
+)
+from ecoscope_workflows_ext_custom.tasks.transformation import (
+    drop_column_prefix as drop_column_prefix,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    get_patrol_observations as get_patrol_observations,
+    get_event_type_display_names_from_events as get_event_type_display_names_from_events,
+)
+from ecoscope_workflows_ext_ecoscope.tasks.io import (
+    get_patrol_observations_from_patrols_df_and_combined_params as get_patrol_observations_from_patrols_df_and_combined_params,
+)
+from ecoscope_workflows_ext_ecoscope.tasks.io import (
+    get_patrols_from_combined_params as get_patrols_from_combined_params,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.io import persist_df as persist_df
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    set_patrol_status as set_patrol_status,
+    set_patrols_and_patrol_events_params as set_patrols_and_patrol_events_params,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.io import (
-    set_patrol_types as set_patrol_types,
-)
-from ecoscope_workflows_ext_ecoscope.tasks.preprocessing import (
-    process_relocations as process_relocations,
+    unpack_events_from_patrols_df_and_combined_params as unpack_events_from_patrols_df_and_combined_params,
 )
 from ecoscope_workflows_ext_ecoscope.tasks.preprocessing import (
     relocations_to_trajectory as relocations_to_trajectory,
@@ -78,36 +90,31 @@ def main(params: Params):
         "workflow_details": [],
         "er_client_name": [],
         "time_range": [],
-        "er_patrol_types": [],
-        "er_patrol_status": [],
-        "patrol_obs": [
-            "er_client_name",
-            "time_range",
-            "er_patrol_types",
-            "er_patrol_status",
-        ],
-        "fetch_patrol_events": [
-            "er_client_name",
-            "time_range",
-            "er_patrol_types",
-            "er_patrol_status",
-        ],
+        "er_patrol_and_events_params": ["er_client_name", "time_range"],
+        "prefetch_patrols": ["er_patrol_and_events_params"],
+        "patrol_obs": ["prefetch_patrols", "er_patrol_and_events_params"],
+        "patrol_events": ["prefetch_patrols", "er_patrol_and_events_params"],
+        "event_type_display_names": ["er_client_name", "patrol_events"],
+        "get_timezone": ["time_range"],
+        "convert_patrols_to_user_timezone": ["patrol_obs", "get_timezone"],
+        "convert_events_to_user_timezone": ["patrol_events", "get_timezone"],
+        "drop_extra_prefix_obs": ["convert_patrols_to_user_timezone"],
+        "filter_patrol_obs": ["drop_extra_prefix_obs"],
+        "patrol_traj": ["filter_patrol_obs"],
+        "drop_extra_prefix_traj": ["patrol_traj"],
+        "customize_columns_internally": ["drop_extra_prefix_traj"],
+        "customize_columns_traj": ["customize_columns_internally"],
+        "sql_query_traj": ["customize_columns_traj"],
         "groupers": [],
-        "patrol_reloc": ["patrol_obs"],
         "set_patrol_traj_color_column": [],
-        "patrol_traj": ["patrol_reloc"],
-        "traj_add_temporal_index": ["patrol_traj", "groupers"],
-        "traj_rename_grouper_columns": ["traj_add_temporal_index"],
-        "traj_colormap": [
-            "traj_rename_grouper_columns",
-            "set_patrol_traj_color_column",
-        ],
-        "filter_fetched_patrol_events": ["fetch_patrol_events"],
-        "pe_add_temporal_index": ["filter_fetched_patrol_events", "groupers"],
+        "traj_add_temporal_index": ["sql_query_traj", "groupers"],
+        "traj_colormap": ["traj_add_temporal_index", "set_patrol_traj_color_column"],
+        "drop_extra_prefix_events": ["convert_events_to_user_timezone"],
+        "filter_patrol_events": ["drop_extra_prefix_events"],
+        "pe_add_temporal_index": ["filter_patrol_events", "groupers"],
         "pe_colormap": ["pe_add_temporal_index"],
         "patrol_traj_cols_to_string": ["traj_colormap"],
         "pe_cols_to_string": ["pe_colormap"],
-        "filter_patrol_events": ["fetch_patrol_events"],
         "split_patrol_traj_groups": ["traj_colormap", "groupers"],
         "split_pe_groups": ["pe_colormap", "groupers"],
         "persist_traj_gpkg": ["patrol_traj"],
@@ -188,9 +195,9 @@ def main(params: Params):
             | (params_dict.get("time_range") or {}),
             method="call",
         ),
-        "er_patrol_types": Node(
-            async_task=set_patrol_types.validate()
-            .set_task_instance_id("er_patrol_types")
+        "er_patrol_and_events_params": Node(
+            async_task=set_patrols_and_patrol_events_params.validate()
+            .set_task_instance_id("er_patrol_and_events_params")
             .handle_errors()
             .with_tracing()
             .skipif(
@@ -201,12 +208,20 @@ def main(params: Params):
                 unpack_depth=1,
             )
             .set_executor("lithops"),
-            partial=(params_dict.get("er_patrol_types") or {}),
+            partial={
+                "client": DependsOn("er_client_name"),
+                "time_range": DependsOn("time_range"),
+                "include_patrol_details": True,
+                "raise_on_empty": False,
+                "truncate_to_time_range": True,
+                "sub_page_size": 100,
+            }
+            | (params_dict.get("er_patrol_and_events_params") or {}),
             method="call",
         ),
-        "er_patrol_status": Node(
-            async_task=set_patrol_status.validate()
-            .set_task_instance_id("er_patrol_status")
+        "prefetch_patrols": Node(
+            async_task=get_patrols_from_combined_params.validate()
+            .set_task_instance_id("prefetch_patrols")
             .handle_errors()
             .with_tracing()
             .skipif(
@@ -217,11 +232,14 @@ def main(params: Params):
                 unpack_depth=1,
             )
             .set_executor("lithops"),
-            partial=(params_dict.get("er_patrol_status") or {}),
+            partial={
+                "combined_params": DependsOn("er_patrol_and_events_params"),
+            }
+            | (params_dict.get("prefetch_patrols") or {}),
             method="call",
         ),
         "patrol_obs": Node(
-            async_task=get_patrol_observations.validate()
+            async_task=get_patrol_observations_from_patrols_df_and_combined_params.validate()
             .set_task_instance_id("patrol_obs")
             .handle_errors()
             .with_tracing()
@@ -234,19 +252,35 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
-                "client": DependsOn("er_client_name"),
-                "time_range": DependsOn("time_range"),
-                "patrol_types": DependsOn("er_patrol_types"),
-                "status": DependsOn("er_patrol_status"),
-                "include_patrol_details": True,
-                "raise_on_empty": False,
+                "patrols_df": DependsOn("prefetch_patrols"),
+                "combined_params": DependsOn("er_patrol_and_events_params"),
             }
             | (params_dict.get("patrol_obs") or {}),
             method="call",
         ),
-        "fetch_patrol_events": Node(
-            async_task=get_patrol_events.validate()
-            .set_task_instance_id("fetch_patrol_events")
+        "patrol_events": Node(
+            async_task=unpack_events_from_patrols_df_and_combined_params.validate()
+            .set_task_instance_id("patrol_events")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "patrols_df": DependsOn("prefetch_patrols"),
+                "combined_params": DependsOn("er_patrol_and_events_params"),
+            }
+            | (params_dict.get("patrol_events") or {}),
+            method="call",
+        ),
+        "event_type_display_names": Node(
+            async_task=get_event_type_display_names_from_events.validate()
+            .set_task_instance_id("event_type_display_names")
             .handle_errors()
             .with_tracing()
             .skipif(
@@ -259,13 +293,218 @@ def main(params: Params):
             .set_executor("lithops"),
             partial={
                 "client": DependsOn("er_client_name"),
-                "time_range": DependsOn("time_range"),
-                "patrol_types": DependsOn("er_patrol_types"),
-                "status": DependsOn("er_patrol_status"),
-                "truncate_to_time_range": True,
-                "raise_on_empty": False,
+                "events_gdf": DependsOn("patrol_events"),
+                "append_category_names": "duplicates",
             }
-            | (params_dict.get("fetch_patrol_events") or {}),
+            | (params_dict.get("event_type_display_names") or {}),
+            method="call",
+        ),
+        "get_timezone": Node(
+            async_task=get_timezone_from_time_range.validate()
+            .set_task_instance_id("get_timezone")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "time_range": DependsOn("time_range"),
+            }
+            | (params_dict.get("get_timezone") or {}),
+            method="call",
+        ),
+        "convert_patrols_to_user_timezone": Node(
+            async_task=convert_values_to_timezone.validate()
+            .set_task_instance_id("convert_patrols_to_user_timezone")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("patrol_obs"),
+                "timezone": DependsOn("get_timezone"),
+                "columns": [
+                    "fixtime",
+                ],
+            }
+            | (params_dict.get("convert_patrols_to_user_timezone") or {}),
+            method="call",
+        ),
+        "convert_events_to_user_timezone": Node(
+            async_task=convert_values_to_timezone.validate()
+            .set_task_instance_id("convert_events_to_user_timezone")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("patrol_events"),
+                "timezone": DependsOn("get_timezone"),
+                "columns": [
+                    "time",
+                ],
+            }
+            | (params_dict.get("convert_events_to_user_timezone") or {}),
+            method="call",
+        ),
+        "drop_extra_prefix_obs": Node(
+            async_task=drop_column_prefix.validate()
+            .set_task_instance_id("drop_extra_prefix_obs")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("convert_patrols_to_user_timezone"),
+                "prefix": "extra__",
+                "duplicate_strategy": "suffix",
+            }
+            | (params_dict.get("drop_extra_prefix_obs") or {}),
+            method="call",
+        ),
+        "filter_patrol_obs": Node(
+            async_task=apply_reloc_coord_filter.validate()
+            .set_task_instance_id("filter_patrol_obs")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("drop_extra_prefix_obs"),
+                "roi_gdf": None,
+                "roi_name": None,
+                "reset_index": False,
+            }
+            | (params_dict.get("filter_patrol_obs") or {}),
+            method="call",
+        ),
+        "patrol_traj": Node(
+            async_task=relocations_to_trajectory.validate()
+            .set_task_instance_id("patrol_traj")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "relocations": DependsOn("filter_patrol_obs"),
+            }
+            | (params_dict.get("patrol_traj") or {}),
+            method="call",
+        ),
+        "drop_extra_prefix_traj": Node(
+            async_task=drop_column_prefix.validate()
+            .set_task_instance_id("drop_extra_prefix_traj")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("patrol_traj"),
+                "prefix": "extra__",
+                "duplicate_strategy": "suffix",
+            }
+            | (params_dict.get("drop_extra_prefix_traj") or {}),
+            method="call",
+        ),
+        "customize_columns_internally": Node(
+            async_task=map_columns.validate()
+            .set_task_instance_id("customize_columns_internally")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("drop_extra_prefix_traj"),
+                "drop_columns": [
+                    "id",
+                ],
+            }
+            | (params_dict.get("customize_columns_internally") or {}),
+            method="call",
+        ),
+        "customize_columns_traj": Node(
+            async_task=map_columns.validate()
+            .set_task_instance_id("customize_columns_traj")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("customize_columns_internally"),
+            }
+            | (params_dict.get("customize_columns_traj") or {}),
+            method="call",
+        ),
+        "sql_query_traj": Node(
+            async_task=apply_sql_query.validate()
+            .set_task_instance_id("sql_query_traj")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("customize_columns_traj"),
+            }
+            | (params_dict.get("sql_query_traj") or {}),
             method="call",
         ),
         "groupers": Node(
@@ -284,54 +523,6 @@ def main(params: Params):
             partial=(params_dict.get("groupers") or {}),
             method="call",
         ),
-        "patrol_reloc": Node(
-            async_task=process_relocations.validate()
-            .set_task_instance_id("patrol_reloc")
-            .handle_errors()
-            .with_tracing()
-            .skipif(
-                conditions=[
-                    any_is_empty_df,
-                    any_dependency_skipped,
-                ],
-                unpack_depth=1,
-            )
-            .set_executor("lithops"),
-            partial={
-                "observations": DependsOn("patrol_obs"),
-                "relocs_columns": [
-                    "patrol_id",
-                    "patrol_start_time",
-                    "patrol_end_time",
-                    "patrol_type__value",
-                    "patrol_type__display",
-                    "patrol_serial_number",
-                    "patrol_status",
-                    "patrol_subject",
-                    "groupby_col",
-                    "fixtime",
-                    "junk_status",
-                    "extra__source",
-                    "geometry",
-                ],
-                "filter_point_coords": [
-                    {
-                        "x": 180.0,
-                        "y": 90.0,
-                    },
-                    {
-                        "x": 0.0,
-                        "y": 0.0,
-                    },
-                    {
-                        "x": 1.0,
-                        "y": 1.0,
-                    },
-                ],
-            }
-            | (params_dict.get("patrol_reloc") or {}),
-            method="call",
-        ),
         "set_patrol_traj_color_column": Node(
             async_task=set_string_var.validate()
             .set_task_instance_id("set_patrol_traj_color_column")
@@ -345,29 +536,7 @@ def main(params: Params):
                 unpack_depth=1,
             )
             .set_executor("lithops"),
-            partial={
-                "var": "patrol_type",
-            }
-            | (params_dict.get("set_patrol_traj_color_column") or {}),
-            method="call",
-        ),
-        "patrol_traj": Node(
-            async_task=relocations_to_trajectory.validate()
-            .set_task_instance_id("patrol_traj")
-            .handle_errors()
-            .with_tracing()
-            .skipif(
-                conditions=[
-                    any_is_empty_df,
-                    any_dependency_skipped,
-                ],
-                unpack_depth=1,
-            )
-            .set_executor("lithops"),
-            partial={
-                "relocations": DependsOn("patrol_reloc"),
-            }
-            | (params_dict.get("patrol_traj") or {}),
+            partial=(params_dict.get("set_patrol_traj_color_column") or {}),
             method="call",
         ),
         "traj_add_temporal_index": Node(
@@ -384,38 +553,13 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
-                "df": DependsOn("patrol_traj"),
-                "time_col": "extra__patrol_start_time",
+                "df": DependsOn("sql_query_traj"),
+                "time_col": "segment_start",
                 "groupers": DependsOn("groupers"),
                 "cast_to_datetime": True,
                 "format": "mixed",
             }
             | (params_dict.get("traj_add_temporal_index") or {}),
-            method="call",
-        ),
-        "traj_rename_grouper_columns": Node(
-            async_task=map_columns.validate()
-            .set_task_instance_id("traj_rename_grouper_columns")
-            .handle_errors()
-            .with_tracing()
-            .skipif(
-                conditions=[
-                    any_is_empty_df,
-                    any_dependency_skipped,
-                ],
-                unpack_depth=1,
-            )
-            .set_executor("lithops"),
-            partial={
-                "df": DependsOn("traj_add_temporal_index"),
-                "rename_columns": {
-                    "extra__patrol_type__value": "patrol_type",
-                    "extra__patrol_serial_number": "patrol_serial_number",
-                    "extra__patrol_status": "patrol_status",
-                    "extra__patrol_subject": "patrol_subject",
-                },
-            }
-            | (params_dict.get("traj_rename_grouper_columns") or {}),
             method="call",
         ),
         "traj_colormap": Node(
@@ -432,7 +576,7 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
-                "df": DependsOn("traj_rename_grouper_columns"),
+                "df": DependsOn("traj_add_temporal_index"),
                 "colormap": [
                     "#FF9600",
                     "#F23B0E",
@@ -457,9 +601,9 @@ def main(params: Params):
             | (params_dict.get("traj_colormap") or {}),
             method="call",
         ),
-        "filter_fetched_patrol_events": Node(
-            async_task=apply_reloc_coord_filter.validate()
-            .set_task_instance_id("filter_fetched_patrol_events")
+        "drop_extra_prefix_events": Node(
+            async_task=drop_column_prefix.validate()
+            .set_task_instance_id("drop_extra_prefix_events")
             .handle_errors()
             .with_tracing()
             .skipif(
@@ -471,11 +615,33 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
-                "df": DependsOn("fetch_patrol_events"),
+                "df": DependsOn("convert_events_to_user_timezone"),
+                "prefix": "extra__",
+                "duplicate_strategy": "suffix",
+            }
+            | (params_dict.get("drop_extra_prefix_events") or {}),
+            method="call",
+        ),
+        "filter_patrol_events": Node(
+            async_task=apply_reloc_coord_filter.validate()
+            .set_task_instance_id("filter_patrol_events")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "df": DependsOn("drop_extra_prefix_events"),
                 "roi_gdf": None,
                 "roi_name": None,
+                "reset_index": True,
             }
-            | (params_dict.get("filter_fetched_patrol_events") or {}),
+            | (params_dict.get("filter_patrol_events") or {}),
             method="call",
         ),
         "pe_add_temporal_index": Node(
@@ -492,7 +658,7 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
-                "df": DependsOn("filter_fetched_patrol_events"),
+                "df": DependsOn("filter_patrol_events"),
                 "time_col": "patrol_start_time",
                 "groupers": DependsOn("groupers"),
                 "cast_to_datetime": True,
@@ -567,27 +733,6 @@ def main(params: Params):
                 ],
             }
             | (params_dict.get("pe_cols_to_string") or {}),
-            method="call",
-        ),
-        "filter_patrol_events": Node(
-            async_task=apply_reloc_coord_filter.validate()
-            .set_task_instance_id("filter_patrol_events")
-            .handle_errors()
-            .with_tracing()
-            .skipif(
-                conditions=[
-                    any_is_empty_df,
-                    any_dependency_skipped,
-                ],
-                unpack_depth=1,
-            )
-            .set_executor("lithops"),
-            partial={
-                "df": DependsOn("fetch_patrol_events"),
-                "roi_gdf": None,
-                "roi_name": None,
-            }
-            | (params_dict.get("filter_patrol_events") or {}),
             method="call",
         ),
         "split_patrol_traj_groups": Node(

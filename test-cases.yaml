@@ -10,22 +10,58 @@ month-grouper:
       data_source:
         name: "mep_dev"
 
-    er_patrol_types:
+    er_patrol_and_events_params:
       patrol_types: ["MEP_routine_vehicle_patrol_bravo_team"]
-
-    er_patrol_status:
       status: ["done"]
-
-    fetch_patrol_events:
       event_types: []
+      include_null_geometry: false
 
     time_range:
-      since: "2015-01-10T00:00:00Z"
-      until: "2015-01-15T23:59:59Z"
+      since: "2015-01-10T00:00:00"
+      until: "2015-01-15T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
 
     groupers:
       groupers:
         - "%B"
+
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+
+    set_patrol_traj_color_column:
+      var: "patrol_type"
+
+    filter_patrol_obs:
+      bounding_box:
+        min_x: -180.0
+        max_x: 180.0
+        min_y: -90.0
+        max_y: 90.0
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+
+    filter_patrol_events:
+      bounding_box:
+        min_x: -180.0
+        max_x: 180.0
+        min_y: -90.0
+        max_y: 90.0
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
 
     base_map_defs:
       base_maps:
