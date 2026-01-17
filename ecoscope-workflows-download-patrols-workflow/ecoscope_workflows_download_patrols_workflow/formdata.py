@@ -75,7 +75,11 @@ class SetPatrolTrajColorColumn(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    var: str = Field(..., title="")
+    var: str = Field(
+        ...,
+        description="Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.",
+        title="Category",
+    )
 
 
 class Filetype(str, Enum):

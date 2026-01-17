@@ -283,8 +283,28 @@
           "additionalProperties": false,
           "properties": {
             "var": {
-              "title": "",
-              "type": "string"
+              "title": "Category",
+              "type": "string",
+              "default": "patrol_subject",
+              "description": "Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.",
+              "oneOf": [
+                {
+                  "const": "patrol_type",
+                  "title": "Patrol Type"
+                },
+                {
+                  "const": "patrol_status",
+                  "title": "Patrol Status"
+                },
+                {
+                  "const": "patrol_subject",
+                  "title": "Patrol Subject"
+                },
+                {
+                  "const": "patrol_serial_number",
+                  "title": "Patrol Serial Number"
+                }
+              ]
             }
           },
           "required": [
