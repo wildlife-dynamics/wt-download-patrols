@@ -497,10 +497,7 @@ drop_extra_prefix_obs = (
 # %%
 # parameters
 
-filter_patrol_obs_params = dict(
-    bounding_box=...,
-    filter_point_coords=...,
-)
+filter_patrol_obs_params = dict()
 
 # %%
 # call the task
@@ -522,6 +519,12 @@ filter_patrol_obs = (
         roi_gdf=None,
         roi_name=None,
         reset_index=False,
+        bounding_box={"min_x": -180.0, "max_x": 180.0, "min_y": -90.0, "max_y": 90.0},
+        filter_point_coords=[
+            {"x": 180.0, "y": 90.0},
+            {"x": 0.0, "y": 0.0},
+            {"x": 1.0, "y": 1.0},
+        ],
         **filter_patrol_obs_params,
     )
     .call()
@@ -902,7 +905,7 @@ drop_extra_prefix_events = (
 
 
 # %% [markdown]
-# ## Apply Coordinate Filter
+# ## Apply Coordinate Filter to Patrol Events
 
 # %%
 # parameters

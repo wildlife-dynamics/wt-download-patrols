@@ -294,18 +294,6 @@ class TimezoneInfo(BaseModel):
     utc: str = Field(..., title="Utc")
 
 
-class BoundingBox(BaseModel):
-    min_y: Optional[float] = Field(-90.0, title="Min Latitude")
-    max_y: Optional[float] = Field(90.0, title="Max Latitude")
-    min_x: Optional[float] = Field(-180.0, title="Min Longitude")
-    max_x: Optional[float] = Field(180.0, title="Max Longitude")
-
-
-class Coordinate(BaseModel):
-    y: float = Field(..., description="Example -0.15293", title="Latitude")
-    x: float = Field(..., description="Example 37.30906", title="Longitude")
-
-
 class TrajectorySegmentFilter(BaseModel):
     min_length_meters: Optional[confloat(ge=0.001)] = Field(
         0.001, title="Minimum Segment Length (Meters)"
@@ -340,6 +328,18 @@ class ValueGrouper(RootModel[str]):
     root: str = Field(..., title="Category")
 
 
+class BoundingBox(BaseModel):
+    min_y: Optional[float] = Field(-90.0, title="Min Latitude")
+    max_y: Optional[float] = Field(90.0, title="Max Latitude")
+    min_x: Optional[float] = Field(-180.0, title="Min Longitude")
+    max_x: Optional[float] = Field(180.0, title="Max Longitude")
+
+
+class Coordinate(BaseModel):
+    y: float = Field(..., description="Example -0.15293", title="Latitude")
+    x: float = Field(..., description="Example 37.30906", title="Longitude")
+
+
 class ErClientName(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -356,24 +356,6 @@ class TimeRange(BaseModel):
     since: datetime = Field(..., description="The start time", title="Since")
     until: datetime = Field(..., description="The end time", title="Until")
     timezone: Optional[TimezoneInfo] = Field(None, title="Timezone")
-
-
-class FilterPatrolObs(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    bounding_box: Optional[BoundingBox] = Field(
-        default_factory=lambda: BoundingBox.model_validate(
-            {"min_y": -90.0, "max_y": 90.0, "min_x": -180.0, "max_x": 180.0}
-        ),
-        description="Filter coordinates to be inside these bounding coordinates.",
-        title="Bounding Box",
-    )
-    filter_point_coords: Optional[List[Coordinate]] = Field(
-        [],
-        description="By adding a filter, the workflow will not include events recorded at the specified coordinates.",
-        title="Filter Exact Point Coordinates",
-    )
 
 
 class PatrolTraj(BaseModel):
@@ -458,9 +440,6 @@ class Params(BaseModel):
     er_patrol_and_events_params: Optional[ErPatrolAndEventsParams] = Field(
         None, title=""
     )
-    filter_patrol_obs: Optional[FilterPatrolObs] = Field(
-        None, title="Filter Observation Relocations"
-    )
     patrol_traj: Optional[PatrolTraj] = Field(None, title="Trajectory Segment Filter")
     customize_columns_traj: Optional[CustomizeColumnsTraj] = Field(
         None, title="Process Columns"
@@ -471,7 +450,7 @@ class Params(BaseModel):
         None, title="Style Trajectory By Category"
     )
     filter_patrol_events: Optional[FilterPatrolEvents] = Field(
-        None, title="Apply Coordinate Filter"
+        None, title="Apply Coordinate Filter to Patrol Events"
     )
     persist_patrol_traj: Optional[PersistPatrolTraj] = Field(
         None, title="Persist Patrol Trajectories"

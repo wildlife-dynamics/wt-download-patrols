@@ -41,17 +41,6 @@ month-grouper:
     set_patrol_traj_color_column:
       var: "patrol_subject"
 
-    filter_patrol_obs:
-      bounding_box:
-        min_x: -180.0
-        max_x: 180.0
-        min_y: -90.0
-        max_y: 90.0
-      filter_point_coords:
-        - {x: 180.0, y: 90.0}
-        - {x: 0.0, y: 0.0}
-        - {x: 1.0, y: 1.0}
-
     filter_patrol_events:
       bounding_box:
         min_x: -180.0

@@ -140,6 +140,15 @@ workflow:
           roi_gdf: null
           roi_name: null
           reset_index: false
+          bounding_box:
+            min_x: -180.0
+            max_x: 180.0
+            min_y: -90.0
+            max_y: 90.0
+          filter_point_coords:
+            - {x: 180.0, y: 90.0}
+            - {x: 0.0, y: 0.0}
+            - {x: 1.0, y: 1.0}
 
       - name: Trajectory Segment Filter
         id: patrol_traj
@@ -225,7 +234,7 @@ workflow:
           prefix: "extra__"
           duplicate_strategy: "suffix"
 
-      - name: Apply Coordinate Filter
+      - name: Apply Coordinate Filter to Patrol Events
         id: filter_patrol_events
         task: apply_reloc_coord_filter
         partial:
@@ -252,6 +261,7 @@ workflow:
           input_column_name: "event_type"
           colormap: "tab20b"
           output_column_name: "event_type_colormap"
+          
   - name: Cast Patrol Trajectory Columns
     id: patrol_traj_cols_to_string
     task: convert_column_values_to_string

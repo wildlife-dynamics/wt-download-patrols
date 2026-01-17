@@ -131,40 +131,6 @@
       "description": "Process patrol observations by applying filters, column transformations, and SQL queries.",
       "ecoscope:task_group": true,
       "properties": {
-        "filter_patrol_obs": {
-          "additionalProperties": false,
-          "properties": {
-            "bounding_box": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/BoundingBox"
-                }
-              ],
-              "default": {
-                "min_y": -90.0,
-                "max_y": 90.0,
-                "min_x": -180.0,
-                "max_x": 180.0
-              },
-              "title": "Bounding Box",
-              "description": "Filter coordinates to be inside these bounding coordinates.",
-              "ecoscope:advanced": true
-            },
-            "filter_point_coords": {
-              "default": [],
-              "items": {
-                "$ref": "#/$defs/Coordinate"
-              },
-              "title": "Filter Exact Point Coordinates",
-              "type": "array",
-              "description": "By adding a filter, the workflow will not include events recorded at the specified coordinates.",
-              "ecoscope:advanced": true
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Filter Observation Relocations"
-        },
         "patrol_traj": {
           "additionalProperties": false,
           "properties": {
@@ -352,7 +318,7 @@
           },
           "required": [],
           "type": "object",
-          "title": "Apply Coordinate Filter"
+          "title": "Apply Coordinate Filter to Patrol Events"
         }
       }
     },
@@ -684,56 +650,6 @@
       "title": "TimezoneInfo",
       "type": "object"
     },
-    "BoundingBox": {
-      "properties": {
-        "min_y": {
-          "default": -90.0,
-          "ecoscope:advanced": true,
-          "title": "Min Latitude",
-          "type": "number"
-        },
-        "max_y": {
-          "default": 90.0,
-          "ecoscope:advanced": true,
-          "title": "Max Latitude",
-          "type": "number"
-        },
-        "min_x": {
-          "default": -180.0,
-          "ecoscope:advanced": true,
-          "title": "Min Longitude",
-          "type": "number"
-        },
-        "max_x": {
-          "default": 180.0,
-          "ecoscope:advanced": true,
-          "title": "Max Longitude",
-          "type": "number"
-        }
-      },
-      "title": "BoundingBox",
-      "type": "object"
-    },
-    "Coordinate": {
-      "properties": {
-        "y": {
-          "description": "Example -0.15293",
-          "title": "Latitude",
-          "type": "number"
-        },
-        "x": {
-          "description": "Example 37.30906",
-          "title": "Longitude",
-          "type": "number"
-        }
-      },
-      "required": [
-        "y",
-        "x"
-      ],
-      "title": "Coordinate",
-      "type": "object"
-    },
     "TrajectorySegmentFilter": {
       "properties": {
         "min_length_meters": {
@@ -855,6 +771,56 @@
       ],
       "title": "Category",
       "type": "string"
+    },
+    "BoundingBox": {
+      "properties": {
+        "min_y": {
+          "default": -90.0,
+          "ecoscope:advanced": true,
+          "title": "Min Latitude",
+          "type": "number"
+        },
+        "max_y": {
+          "default": 90.0,
+          "ecoscope:advanced": true,
+          "title": "Max Latitude",
+          "type": "number"
+        },
+        "min_x": {
+          "default": -180.0,
+          "ecoscope:advanced": true,
+          "title": "Min Longitude",
+          "type": "number"
+        },
+        "max_x": {
+          "default": 180.0,
+          "ecoscope:advanced": true,
+          "title": "Max Longitude",
+          "type": "number"
+        }
+      },
+      "title": "BoundingBox",
+      "type": "object"
+    },
+    "Coordinate": {
+      "properties": {
+        "y": {
+          "description": "Example -0.15293",
+          "title": "Latitude",
+          "type": "number"
+        },
+        "x": {
+          "description": "Example 37.30906",
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "y",
+        "x"
+      ],
+      "title": "Coordinate",
+      "type": "object"
     }
   },
   "uiSchema": {
@@ -883,26 +849,12 @@
     },
     "Process Patrol Observations": {
       "ui:order": [
-        "filter_patrol_obs",
         "patrol_traj",
         "customize_columns_traj",
         "sql_query_traj",
         "groupers",
         "set_patrol_traj_color_column"
       ],
-      "filter_patrol_obs": {
-        "ui:order": [
-          "bounding_box",
-          "filter_point_coords"
-        ],
-        "filter_point_coords": {
-          "items": {
-            "ui:options": {
-              "label": false
-            }
-          }
-        }
-      },
       "customize_columns_traj": {
         "ui:order": [
           "drop_columns",
@@ -922,6 +874,15 @@
           "query",
           "columns"
         ]
+      },
+      "filter_patrol_obs": {
+        "filter_point_coords": {
+          "items": {
+            "ui:options": {
+              "label": false
+            }
+          }
+        }
       }
     },
     "Process Patrol Events": {
