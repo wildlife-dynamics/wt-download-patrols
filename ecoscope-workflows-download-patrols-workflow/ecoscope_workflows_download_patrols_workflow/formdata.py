@@ -92,7 +92,7 @@ class PersistPatrolTraj(BaseModel):
         ["csv"], description="The output format", title="Filetypes"
     )
     filename_prefix: Optional[str] = Field(
-        None,
+        "patrol_trajectories",
         description="            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
         title="Filename Prefix",
     )
@@ -106,7 +106,7 @@ class PersistPatrolEvents(BaseModel):
         ["csv"], description="The output format", title="Filetypes"
     )
     filename_prefix: Optional[str] = Field(
-        None,
+        "patrol_events",
         description="            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
         title="Filename Prefix",
     )
@@ -118,7 +118,7 @@ class SkipMapGeneration(BaseModel):
     )
     skip: Optional[bool] = Field(
         False,
-        description="Skip the following tasks if True, returning a sentinel value.",
+        description="Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
         title="Skip",
     )
 
@@ -285,7 +285,7 @@ class BaseMapDefs(BaseModel):
             },
         ],
         description="Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
-        title=" ",
+        title="Map Base Layers",
     )
 
 
@@ -350,7 +350,11 @@ class TemporalGrouper(RootModel[str]):
 
 
 class ValueGrouper(RootModel[str]):
-    root: str = Field(..., title="Category")
+    root: str = Field(
+        ...,
+        description="Use a categorical column to group data by. If you're unsure which columns are available, run the workflow once without grouping to see the data, then configure grouping in a subsequent run.",
+        title="Category",
+    )
 
 
 class ErClientName(BaseModel):

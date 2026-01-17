@@ -357,7 +357,7 @@
           "uniqueItems": true
         },
         "filename_prefix": {
-          "default": null,
+          "default": "patrol_trajectories",
           "title": "Filename Prefix",
           "type": "string",
           "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
@@ -389,7 +389,7 @@
           "uniqueItems": true
         },
         "filename_prefix": {
-          "default": null,
+          "default": "patrol_events",
           "title": "Filename Prefix",
           "type": "string",
           "description": "            Optional filename prefix to persist text to within the `root_path`.\n            We will always add a suffix based on the dataframe content hash to avoid duplicates.\n            ",
@@ -412,7 +412,7 @@
               "default": false,
               "title": "Skip",
               "type": "boolean",
-              "description": "Skip the following tasks if True, returning a sentinel value."
+              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance."
             }
           },
           "required": [],
@@ -609,7 +609,7 @@
                   }
                 ]
               },
-              "title": " ",
+              "title": "Map Base Layers",
               "type": "array",
               "description": "Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
               "ecoscope:advanced": true
@@ -819,7 +819,7 @@
       "type": "string"
     },
     "ValueGrouper": {
-      "oneOf": [],
+      "description": "Use a categorical column to group data by. If you're unsure which columns are available, run the workflow once without grouping to see the data, then configure grouping in a subsequent run.",
       "title": "Category",
       "type": "string"
     }
@@ -861,14 +861,28 @@
         "ui:order": [
           "bounding_box",
           "filter_point_coords"
-        ]
+        ],
+        "filter_point_coords": {
+          "items": {
+            "ui:options": {
+              "label": false
+            }
+          }
+        }
       },
       "customize_columns_traj": {
         "ui:order": [
           "drop_columns",
           "retain_columns",
           "rename_columns"
-        ]
+        ],
+        "rename_columns": {
+          "items": {
+            "ui:options": {
+              "label": false
+            }
+          }
+        }
       },
       "sql_query_traj": {
         "ui:order": [
@@ -882,7 +896,14 @@
         "ui:order": [
           "bounding_box",
           "filter_point_coords"
-        ]
+        ],
+        "filter_point_coords": {
+          "items": {
+            "ui:options": {
+              "label": false
+            }
+          }
+        }
       }
     },
     "persist_patrol_traj": {
@@ -901,7 +922,16 @@
       "ui:order": [
         "skip_map_generation",
         "base_map_defs"
-      ]
+      ],
+      "base_map_defs": {
+        "base_maps": {
+          "items": {
+            "ui:options": {
+              "label": false
+            }
+          }
+        }
+      }
     },
     "ui:order": [
       "workflow_details",

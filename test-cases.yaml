@@ -11,14 +11,14 @@ month-grouper:
         name: "mep_dev"
 
     er_patrol_and_events_params:
-      patrol_types: ["MEP_routine_vehicle_patrol_bravo_team"]
+      patrol_types: ["ecoscope_patrol"]
       status: ["done"]
       event_types: []
       include_null_geometry: false
 
     time_range:
       since: "2015-01-10T00:00:00"
-      until: "2015-01-15T23:59:59"
+      until: "2015-02-28T23:59:59"
       timezone:
         label: "Africa/Nairobi (UTC+03:00)"
         tzCode: "Africa/Nairobi"
