@@ -1,0 +1,36 @@
+month-grouper:
+  name: Monthly Grouper
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Process and visualize patrol observations and events."
+
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+
+    er_patrol_types:
+      patrol_types: ["MEP_routine_vehicle_patrol_bravo_team"]
+
+    er_patrol_status:
+      status: ["done"]
+
+    fetch_patrol_events:
+      event_types: []
+
+    time_range:
+      since: "2015-01-10T00:00:00Z"
+      until: "2015-01-15T23:59:59Z"
+
+    groupers:
+      groupers:
+        - "%B"
+
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 0.1
+        - url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places_Alternate/MapServer/tile/{z}/{y}/{x}"
+          opacity: 0.8
+          max_zoom: 17
