@@ -178,6 +178,8 @@ workflow:
         task: map_columns
         partial:
           df: ${{ workflow.customize_columns_internally.return }}
+          rename_columns: {}
+          retain_columns: []
 
       - name: Apply SQL Query
         id: sql_query_traj

@@ -433,6 +433,8 @@ def main(params: Params):
         )
         .partial(
             df=customize_columns_internally,
+            rename_columns={},
+            retain_columns=[],
             **(params_dict.get("customize_columns_traj") or {}),
         )
         .call()

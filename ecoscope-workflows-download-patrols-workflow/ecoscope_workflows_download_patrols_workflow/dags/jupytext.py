@@ -636,8 +636,6 @@ customize_columns_internally = (
 
 customize_columns_traj_params = dict(
     drop_columns=...,
-    retain_columns=...,
-    rename_columns=...,
 )
 
 # %%
@@ -655,7 +653,12 @@ customize_columns_traj = (
         ],
         unpack_depth=1,
     )
-    .partial(df=customize_columns_internally, **customize_columns_traj_params)
+    .partial(
+        df=customize_columns_internally,
+        rename_columns={},
+        retain_columns=[],
+        **customize_columns_traj_params,
+    )
     .call()
 )
 
