@@ -323,8 +323,23 @@ workflow:
       Generate maps to visualize patrol trajectories and events.
     tasks:
       - name: Skip Map Generation
-        id: skip_map_generation
+        id: set_skip_map
+        task: set_bool_var
+
+      - name: ""
+        id: skip_traj_map
         task: maybe_skip_df
+        partial:
+          skip: ${{ workflow.set_skip_map.return }}
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.split_pe_groups.return }}
+
+      - name: ""
+        id: skip_event_map
+        task: maybe_skip_df
+        partial:
+          skip: ${{ workflow.set_skip_map.return }}
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.split_patrol_traj_groups.return }}
@@ -353,7 +368,7 @@ workflow:
             speed_kmhr: "Speed (kph)"
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.skip_map_generation.return }}
+          argvalues: ${{ workflow.skip_traj_map.return }}
 
       - name: Rename Event Columns for Display
         id: rename_event_display_columns
@@ -367,7 +382,7 @@ workflow:
             time: "Event Time"
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.split_pe_groups.return }}
+          argvalues: ${{ workflow.skip_event_map.return }}
 
       - name: Create Trajectory Map Layers
         id: patrol_traj_map_layers
@@ -413,7 +428,9 @@ workflow:
         task: groupbykey
         skipif:
           conditions:
-            - all_keyed_iterables_are_skips
+            # todo: this is a shortcut to avoid two skip_map_generation tasks. We need a better way to handle if one layer is legitly empty.
+            # - all_keyed_iterables_are_skips
+            - any_dependency_skipped
           unpack_depth: 1
         partial:
           iterables:

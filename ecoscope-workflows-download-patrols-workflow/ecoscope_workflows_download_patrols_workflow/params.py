@@ -115,15 +115,11 @@ class PersistPatrolEvents(BaseModel):
     )
 
 
-class SkipMapGeneration(BaseModel):
+class SetSkipMap(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    skip: Optional[bool] = Field(
-        False,
-        description="Skip the following tasks if True, returning a sentinel value.",
-        title="Skip",
-    )
+    var: bool = Field(..., title="")
 
 
 class Url(str, Enum):
@@ -445,7 +441,5 @@ class Params(BaseModel):
     persist_patrol_events: Optional[PersistPatrolEvents] = Field(
         None, title="Persist Patrol Events"
     )
-    skip_map_generation: Optional[SkipMapGeneration] = Field(
-        None, title="Skip Map Generation"
-    )
+    set_skip_map: Optional[SetSkipMap] = Field(None, title="Skip Map Generation")
     base_map_defs: Optional[BaseMapDefs] = Field(None, title=" ")

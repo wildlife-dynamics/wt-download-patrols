@@ -325,17 +325,17 @@
       "type": "object",
       "title": "Persist Patrol Events"
     },
-    "skip_map_generation": {
+    "set_skip_map": {
       "additionalProperties": false,
       "properties": {
-        "skip": {
-          "default": false,
-          "title": "Skip",
-          "type": "boolean",
-          "description": "Skip the following tasks if True, returning a sentinel value."
+        "var": {
+          "title": "",
+          "type": "boolean"
         }
       },
-      "required": [],
+      "required": [
+        "var"
+      ],
       "type": "object",
       "title": "Skip Map Generation"
     },
@@ -783,7 +783,7 @@
       "filter_patrol_events",
       "persist_patrol_traj",
       "persist_patrol_events",
-      "skip_map_generation",
+      "set_skip_map",
       "base_map_defs"
     ]
   },

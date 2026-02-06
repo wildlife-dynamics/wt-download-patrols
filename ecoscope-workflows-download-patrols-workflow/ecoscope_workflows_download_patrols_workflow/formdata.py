@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, constr
 
@@ -125,15 +125,11 @@ class PersistPatrolEvents(BaseModel):
     )
 
 
-class SkipMapGeneration(BaseModel):
+class SetSkipMap(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    skip: Optional[bool] = Field(
-        False,
-        description="Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
-        title="Skip",
-    )
+    var: bool = Field(..., title="")
 
 
 class Url(str, Enum):
@@ -302,11 +298,17 @@ class BaseMapDefs(BaseModel):
     )
 
 
-class GenerateMaps(BaseModel):
-    skip_map_generation: Optional[SkipMapGeneration] = Field(
-        None, title="Skip Map Generation"
+class SkipMapGeneration(BaseModel):
+    skip: Optional[Any] = Field(
+        None,
+        description="Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
     )
+
+
+class GenerateMaps(BaseModel):
+    set_skip_map: Optional[SetSkipMap] = Field(None, title="Skip Map Generation")
     base_map_defs: Optional[BaseMapDefs] = Field(None, title=" ")
+    skip_map_generation: Optional[SkipMapGeneration] = None
 
 
 class EarthRangerConnection(BaseModel):

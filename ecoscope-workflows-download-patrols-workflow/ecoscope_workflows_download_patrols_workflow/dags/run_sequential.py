@@ -2,6 +2,7 @@
 import json
 import os
 
+from ecoscope_workflows_core.tasks.config import set_bool_var as set_bool_var
 from ecoscope_workflows_core.tasks.config import set_string_var as set_string_var
 from ecoscope_workflows_core.tasks.config import (
     set_workflow_details as set_workflow_details,
@@ -21,9 +22,6 @@ from ecoscope_workflows_core.tasks.results import (
 from ecoscope_workflows_core.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope_workflows_core.tasks.results import (
     merge_widget_views as merge_widget_views,
-)
-from ecoscope_workflows_core.tasks.skip import (
-    all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
 )
 from ecoscope_workflows_core.tasks.skip import (
     any_dependency_skipped as any_dependency_skipped,
@@ -778,9 +776,9 @@ def main(params: Params):
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
 
-    skip_map_generation = (
-        maybe_skip_df.validate()
-        .set_task_instance_id("skip_map_generation")
+    set_skip_map = (
+        set_bool_var.validate()
+        .set_task_instance_id("set_skip_map")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -790,7 +788,39 @@ def main(params: Params):
             ],
             unpack_depth=1,
         )
-        .partial(**(params_dict.get("skip_map_generation") or {}))
+        .partial(**(params_dict.get("set_skip_map") or {}))
+        .call()
+    )
+
+    skip_traj_map = (
+        maybe_skip_df.validate()
+        .set_task_instance_id("skip_traj_map")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(skip=set_skip_map, **(params_dict.get("skip_traj_map") or {}))
+        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+    )
+
+    skip_event_map = (
+        maybe_skip_df.validate()
+        .set_task_instance_id("skip_event_map")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(skip=set_skip_map, **(params_dict.get("skip_event_map") or {}))
         .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
     )
 
@@ -853,7 +883,7 @@ def main(params: Params):
             },
             **(params_dict.get("rename_traj_display_columns") or {}),
         )
-        .mapvalues(argnames=["df"], argvalues=skip_map_generation)
+        .mapvalues(argnames=["df"], argvalues=skip_traj_map)
     )
 
     rename_event_display_columns = (
@@ -878,7 +908,7 @@ def main(params: Params):
             },
             **(params_dict.get("rename_event_display_columns") or {}),
         )
-        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+        .mapvalues(argnames=["df"], argvalues=skip_event_map)
     )
 
     patrol_traj_map_layers = (
@@ -945,7 +975,7 @@ def main(params: Params):
         .with_tracing()
         .skipif(
             conditions=[
-                all_keyed_iterables_are_skips,
+                any_dependency_skipped,
             ],
             unpack_depth=1,
         )

@@ -371,17 +371,17 @@
       "description": "Generate maps to visualize patrol trajectories and events.",
       "ecoscope:task_group": true,
       "properties": {
-        "skip_map_generation": {
+        "set_skip_map": {
           "additionalProperties": false,
           "properties": {
-            "skip": {
-              "default": false,
-              "title": "Skip",
-              "type": "boolean",
-              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance."
+            "var": {
+              "title": "",
+              "type": "boolean"
             }
           },
-          "required": [],
+          "required": [
+            "var"
+          ],
           "type": "object",
           "title": "Skip Map Generation"
         },
@@ -584,6 +584,13 @@
           "type": "object",
           "required": [],
           "title": " "
+        },
+        "skip_map_generation": {
+          "properties": {
+            "skip": {
+              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance."
+            }
+          }
         }
       }
     }
@@ -871,7 +878,7 @@
     },
     "Generate Maps": {
       "ui:order": [
-        "skip_map_generation",
+        "set_skip_map",
         "base_map_defs"
       ],
       "base_map_defs": {
