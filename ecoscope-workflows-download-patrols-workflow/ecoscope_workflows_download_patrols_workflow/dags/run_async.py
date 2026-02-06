@@ -25,6 +25,9 @@ from ecoscope_workflows_core.tasks.results import (
     merge_widget_views as merge_widget_views,
 )
 from ecoscope_workflows_core.tasks.skip import (
+    all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
+)
+from ecoscope_workflows_core.tasks.skip import (
     any_dependency_skipped as any_dependency_skipped,
 )
 from ecoscope_workflows_core.tasks.skip import any_is_empty_df as any_is_empty_df
@@ -129,8 +132,8 @@ def main(params: Params):
         "persist_patrol_traj": ["split_patrol_traj_groups"],
         "persist_patrol_events": ["split_pe_groups"],
         "set_skip_map": [],
-        "skip_traj_map": ["set_skip_map", "split_pe_groups"],
-        "skip_event_map": ["set_skip_map", "split_patrol_traj_groups"],
+        "skip_traj_map": ["set_skip_map", "split_patrol_traj_groups"],
+        "skip_event_map": ["set_skip_map", "split_pe_groups"],
         "set_patrol_map_title": [],
         "base_map_defs": [],
         "rename_traj_display_columns": ["skip_traj_map"],
@@ -923,7 +926,7 @@ def main(params: Params):
             method="mapvalues",
             kwargs={
                 "argnames": ["df"],
-                "argvalues": DependsOn("split_pe_groups"),
+                "argvalues": DependsOn("split_patrol_traj_groups"),
             },
         ),
         "skip_event_map": Node(
@@ -946,7 +949,7 @@ def main(params: Params):
             method="mapvalues",
             kwargs={
                 "argnames": ["df"],
-                "argvalues": DependsOn("split_patrol_traj_groups"),
+                "argvalues": DependsOn("split_pe_groups"),
             },
         ),
         "set_patrol_map_title": Node(
@@ -1119,7 +1122,7 @@ def main(params: Params):
             .with_tracing()
             .skipif(
                 conditions=[
-                    any_dependency_skipped,
+                    all_keyed_iterables_are_skips,
                 ],
                 unpack_depth=1,
             )

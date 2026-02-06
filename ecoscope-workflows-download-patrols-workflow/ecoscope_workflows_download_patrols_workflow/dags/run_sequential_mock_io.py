@@ -60,6 +60,9 @@ from ecoscope_workflows_core.tasks.results import gather_dashboard as gather_das
 from ecoscope_workflows_core.tasks.results import (
     merge_widget_views as merge_widget_views,
 )
+from ecoscope_workflows_core.tasks.skip import (
+    all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
+)
 from ecoscope_workflows_core.tasks.skip import never as never
 from ecoscope_workflows_core.tasks.transformation import (
     add_temporal_index as add_temporal_index,
@@ -825,7 +828,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(skip=set_skip_map, **(params_dict.get("skip_traj_map") or {}))
-        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
     )
 
     skip_event_map = (
@@ -841,7 +844,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(skip=set_skip_map, **(params_dict.get("skip_event_map") or {}))
-        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+        .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
 
     set_patrol_map_title = (
@@ -995,7 +998,7 @@ def main(params: Params):
         .with_tracing()
         .skipif(
             conditions=[
-                any_dependency_skipped,
+                all_keyed_iterables_are_skips,
             ],
             unpack_depth=1,
         )

@@ -34,6 +34,9 @@ from ecoscope_workflows_core.tasks.results import (
     merge_widget_views as merge_widget_views,
 )
 from ecoscope_workflows_core.tasks.skip import (
+    all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
+)
+from ecoscope_workflows_core.tasks.skip import (
     any_dependency_skipped as any_dependency_skipped,
 )
 from ecoscope_workflows_core.tasks.skip import any_is_empty_df as any_is_empty_df
@@ -1255,7 +1258,7 @@ skip_traj_map = (
         unpack_depth=1,
     )
     .partial(skip=set_skip_map, **skip_traj_map_params)
-    .mapvalues(argnames=["df"], argvalues=split_pe_groups)
+    .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
 )
 
 
@@ -1283,7 +1286,7 @@ skip_event_map = (
         unpack_depth=1,
     )
     .partial(skip=set_skip_map, **skip_event_map_params)
-    .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+    .mapvalues(argnames=["df"], argvalues=split_pe_groups)
 )
 
 
@@ -1524,7 +1527,7 @@ combined_traj_and_pe_map_layers = (
     .with_tracing()
     .skipif(
         conditions=[
-            any_dependency_skipped,
+            all_keyed_iterables_are_skips,
         ],
         unpack_depth=1,
     )

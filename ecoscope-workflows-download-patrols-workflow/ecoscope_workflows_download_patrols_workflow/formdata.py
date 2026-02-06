@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, constr
 
@@ -129,7 +129,11 @@ class SetSkipMap(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    var: bool = Field(..., title="")
+    var: bool = Field(
+        ...,
+        description="Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
+        title="",
+    )
 
 
 class Url(str, Enum):
@@ -298,17 +302,9 @@ class BaseMapDefs(BaseModel):
     )
 
 
-class SkipMapGeneration(BaseModel):
-    skip: Optional[Any] = Field(
-        None,
-        description="Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
-    )
-
-
 class GenerateMaps(BaseModel):
     set_skip_map: Optional[SetSkipMap] = Field(None, title="Skip Map Generation")
     base_map_defs: Optional[BaseMapDefs] = Field(None, title=" ")
-    skip_map_generation: Optional[SkipMapGeneration] = None
 
 
 class EarthRangerConnection(BaseModel):
@@ -341,6 +337,10 @@ class TrajectorySegmentFilter(BaseModel):
     max_speed_kmhr: Optional[confloat(gt=0.001)] = Field(
         500, title="Maximum Segment Speed (Kilometers per Hour)"
     )
+
+
+class SpatialGrouper(RootModel[str]):
+    root: str = Field(..., title="Spatial Regions")
 
 
 class TemporalGrouper(RootModel[str]):
@@ -405,10 +405,12 @@ class Groupers(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    groupers: Optional[List[Union[ValueGrouper, TemporalGrouper]]] = Field(
-        None,
-        description="            Specify how the data should be grouped to create the views for your dashboard.\n            This field is optional; if left blank, all the data will appear in a single view.\n            ",
-        title=" ",
+    groupers: Optional[List[Union[ValueGrouper, TemporalGrouper, SpatialGrouper]]] = (
+        Field(
+            None,
+            description="            Specify how the data should be grouped to create the views for your dashboard.\n            This field is optional; if left blank, all the data will appear in a single view.\n            ",
+            title=" ",
+        )
     )
 
 

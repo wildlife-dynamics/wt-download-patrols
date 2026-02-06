@@ -52,8 +52,8 @@ base:
     persist_patrol_events:
       filetypes: ["geoparquet", "csv"]
       filename_prefix: "patrol_events"
-    skip_map_generation:
-      skip: false
+    set_skip_map:
+      var: false
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -125,8 +125,8 @@ month-grouper:
       filetypes: ["geoparquet", "csv"]
       filename_prefix: "patrol_events"
 
-    skip_map_generation:
-      skip: false
+    set_skip_map:
+      var: false
 
     base_map_defs:
       base_maps:
@@ -180,6 +180,8 @@ with-event-types:
     persist_patrol_events:
       filetypes: ["geoparquet", "csv"]
       filename_prefix: "patrol_events_typed"
+    set_skip_map:
+      var: false
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
@@ -232,7 +234,8 @@ color-by-patrol-type:
       filename_prefix: "patrol_trajectories_by_type"
     persist_patrol_events:
       filetypes: ["geoparquet", "csv"]
-      filename_prefix: "patrol_events"
+    set_skip_map:
+      var: false
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"

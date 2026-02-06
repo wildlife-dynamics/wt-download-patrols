@@ -212,6 +212,9 @@
                   },
                   {
                     "$ref": "#/$defs/TemporalGrouper"
+                  },
+                  {
+                    "$ref": "#/$defs/SpatialGrouper"
                   }
                 ],
                 "title": "Group by"
@@ -376,7 +379,9 @@
           "properties": {
             "var": {
               "title": "",
-              "type": "boolean"
+              "type": "boolean",
+              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
+              "default": false
             }
           },
           "required": [
@@ -416,6 +421,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -439,6 +445,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -462,6 +469,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -485,6 +493,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -508,6 +517,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -531,6 +541,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -552,6 +563,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Custom Layer Opacity",
@@ -584,13 +596,6 @@
           "type": "object",
           "required": [],
           "title": " "
-        },
-        "skip_map_generation": {
-          "properties": {
-            "skip": {
-              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance."
-            }
-          }
         }
       }
     }
@@ -684,6 +689,10 @@
       },
       "title": "TrajectorySegmentFilter",
       "type": "object"
+    },
+    "SpatialGrouper": {
+      "title": "Spatial Regions",
+      "type": "string"
     },
     "TemporalGrouper": {
       "oneOf": [

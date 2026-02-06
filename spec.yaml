@@ -13,8 +13,9 @@ requirements:
 
 rjsf-overrides:
   properties:
-    Generate Maps.properties.skip_map_generation.properties.skip.description: >-
+    Generate Maps.properties.set_skip_map.properties.var.description: >-
       Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.
+    Generate Maps.properties.set_skip_map.properties.var.default: false
     Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
     persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
@@ -333,7 +334,7 @@ workflow:
           skip: ${{ workflow.set_skip_map.return }}
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.split_pe_groups.return }}
+          argvalues: ${{ workflow.split_patrol_traj_groups.return }}
 
       - name: ""
         id: skip_event_map
@@ -342,7 +343,7 @@ workflow:
           skip: ${{ workflow.set_skip_map.return }}
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.split_patrol_traj_groups.return }}
+          argvalues: ${{ workflow.split_pe_groups.return }}
 
       - name: "Set Patrol Map Title"
         id: set_patrol_map_title
@@ -428,9 +429,7 @@ workflow:
         task: groupbykey
         skipif:
           conditions:
-            # todo: this is a shortcut to avoid two skip_map_generation tasks. We need a better way to handle if one layer is legitly empty.
-            # - all_keyed_iterables_are_skips
-            - any_dependency_skipped
+            - all_keyed_iterables_are_skips
           unpack_depth: 1
         partial:
           iterables:
