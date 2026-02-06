@@ -146,15 +146,9 @@ Filter track data by setting limits on track segment length, duration, and speed
 #### Process Columns
 Customize the columns in your trajectory output.
 
-- **Drop Columns**: List of columns to drop
-  - Default: `[]`
-  - Example: `["unwanted_column"]`
-- **Retain Columns**: List of columns to retain with the order specified by the list. Keep all columns if the list is empty.
-  - Default: `[]`
-  - Example: `["patrol_serial_number", "patrol_type", "segment_start"]`
-- **Rename Columns**: Dictionary of columns to rename
-  - Default: `{}`
-  - Example: `[{"original_name": "fixtime", "new_name": "observation_time"}]`
+- **Drop Columns**: List of columns to drop from the output
+  - Default includes common internal/system columns: `location`, `end_time`, `message`, `provenance`, `priority`, `priority_label`, `attributes`, `comment`, `patrol_segments`, `updated_at`, `state`, `is_contained_in`, `sort_at`, `icon_id`, `url`, `image_url`, `geojson`, `related_subjects`, `patrols`, `reported_by`
+  - Modify the list based on your requirements - add columns you want to hide or remove columns you want to keep
 
 #### Apply SQL Query
 Apply custom SQL queries for advanced filtering.
@@ -250,12 +244,13 @@ Your patrol data will be saved in the format(s) you selected:
   - CSV: Quick data review and analysis
   - GeoParquet: Large datasets, programmatic analysis
   - GPKG: Spatial analysis in GIS software
-- **Contents**: Events recorded during patrols
+- **Contents**: Events recorded during patrols with normalized event details (coded values are automatically mapped to human-readable display titles)
   - `id`: Unique identifier for the event
   - `patrol_serial_number`: Unique identifier for the associated patrol
   - `event_type`: Type of event recorded
-  - `time`: Time when the event occurred
+  - `event_time`: Time when the event occurred
   - `geometry`: Point geometry of the event location
+  - Additional event details are automatically expanded into separate columns
 
 ### Visual Outputs (Dashboard)
 
