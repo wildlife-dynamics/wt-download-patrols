@@ -847,15 +847,6 @@
             }
           }
         }
-      },
-      "customize_columns_traj": {
-        "rename_columns": {
-          "items": {
-            "ui:options": {
-              "label": false
-            }
-          }
-        }
       }
     },
     "Process Patrol Events": {

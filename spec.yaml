@@ -39,7 +39,6 @@ rjsf-overrides:
 
   uiSchema:
     Process Patrol Observations.filter_patrol_obs.filter_point_coords.items.ui:options.label: false
-    Process Patrol Observations.customize_columns_traj.rename_columns.items.ui:options.label: false
     Process Patrol Events.filter_patrol_events.filter_point_coords.items.ui:options.label: false
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
 
