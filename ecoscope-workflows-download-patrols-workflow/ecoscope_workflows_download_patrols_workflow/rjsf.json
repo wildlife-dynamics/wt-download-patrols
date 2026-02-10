@@ -169,26 +169,6 @@
               "type": "array",
               "description": "List of columns to drop.",
               "ecoscope:advanced": true
-            },
-            "retain_columns": {
-              "default": [],
-              "items": {
-                "type": "string"
-              },
-              "title": "Retain Columns",
-              "type": "array",
-              "description": "List of columns to retain with the order specified by the list.\n                        Keep all the columns if the list is empty.",
-              "ecoscope:advanced": true
-            },
-            "rename_columns": {
-              "default": {},
-              "items": {
-                "$ref": "#/$defs/RenameColumn"
-              },
-              "title": "Rename Columns",
-              "type": "array",
-              "description": "Dictionary of columns to rename.",
-              "ecoscope:advanced": true
             }
           },
           "required": [],
@@ -200,7 +180,7 @@
           "properties": {
             "query": {
               "default": "",
-              "title": "Query",
+              "title": "SQL Query",
               "type": "string",
               "description": "SQL query string to apply to the DataFrame. Leaves it unchanged when the field is emptyUse 'df' as the table name in the query.",
               "ecoscope:advanced": true
@@ -232,6 +212,9 @@
                   },
                   {
                     "$ref": "#/$defs/TemporalGrouper"
+                  },
+                  {
+                    "$ref": "#/$defs/SpatialGrouper"
                   }
                 ],
                 "title": "Group by"
@@ -391,17 +374,19 @@
       "description": "Generate maps to visualize patrol trajectories and events.",
       "ecoscope:task_group": true,
       "properties": {
-        "skip_map_generation": {
+        "set_skip_map": {
           "additionalProperties": false,
           "properties": {
-            "skip": {
-              "default": false,
-              "title": "Skip",
+            "var": {
+              "title": "",
               "type": "boolean",
-              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance."
+              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
+              "default": false
             }
           },
-          "required": [],
+          "required": [
+            "var"
+          ],
           "type": "object",
           "title": "Skip Map Generation"
         },
@@ -436,6 +421,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -459,6 +445,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -482,6 +469,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -505,6 +493,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -528,6 +517,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -551,6 +541,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Layer Opacity",
@@ -572,6 +563,7 @@
                       "opacity": {
                         "default": 1,
                         "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
                         "maximum": 1.0,
                         "minimum": 0.0,
                         "title": "Custom Layer Opacity",
@@ -698,23 +690,9 @@
       "title": "TrajectorySegmentFilter",
       "type": "object"
     },
-    "RenameColumn": {
-      "properties": {
-        "original_name": {
-          "title": "Original Name",
-          "type": "string"
-        },
-        "new_name": {
-          "title": "New Name",
-          "type": "string"
-        }
-      },
-      "required": [
-        "original_name",
-        "new_name"
-      ],
-      "title": "RenameColumn",
-      "type": "object"
+    "SpatialGrouper": {
+      "title": "Spatial Regions",
+      "type": "string"
     },
     "TemporalGrouper": {
       "oneOf": [
@@ -855,20 +833,6 @@
         "groupers",
         "set_patrol_traj_color_column"
       ],
-      "customize_columns_traj": {
-        "ui:order": [
-          "drop_columns",
-          "retain_columns",
-          "rename_columns"
-        ],
-        "rename_columns": {
-          "items": {
-            "ui:options": {
-              "label": false
-            }
-          }
-        }
-      },
       "sql_query_traj": {
         "ui:order": [
           "query",
@@ -914,7 +878,7 @@
     },
     "Generate Maps": {
       "ui:order": [
-        "skip_map_generation",
+        "set_skip_map",
         "base_map_defs"
       ],
       "base_map_defs": {

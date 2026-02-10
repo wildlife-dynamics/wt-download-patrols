@@ -3,6 +3,7 @@ import json
 import os
 
 from ecoscope_workflows_core.graph import DependsOn, Graph, Node
+from ecoscope_workflows_core.tasks.config import set_bool_var as set_bool_var
 from ecoscope_workflows_core.tasks.config import set_string_var as set_string_var
 from ecoscope_workflows_core.tasks.config import (
     set_workflow_details as set_workflow_details,
@@ -130,11 +131,13 @@ def main(params: Params):
         "split_pe_groups": ["pe_colormap", "groupers"],
         "persist_patrol_traj": ["split_patrol_traj_groups"],
         "persist_patrol_events": ["split_pe_groups"],
-        "skip_map_generation": ["split_patrol_traj_groups"],
+        "set_skip_map": [],
+        "skip_traj_map": ["set_skip_map", "split_patrol_traj_groups"],
+        "skip_event_map": ["set_skip_map", "split_pe_groups"],
         "set_patrol_map_title": [],
         "base_map_defs": [],
-        "rename_traj_display_columns": ["skip_map_generation"],
-        "rename_event_display_columns": ["split_pe_groups"],
+        "rename_traj_display_columns": ["skip_traj_map"],
+        "rename_event_display_columns": ["skip_event_map"],
         "patrol_traj_map_layers": [
             "set_patrol_traj_color_column",
             "rename_traj_display_columns",
@@ -887,9 +890,9 @@ def main(params: Params):
                 "argvalues": DependsOn("split_pe_groups"),
             },
         ),
-        "skip_map_generation": Node(
-            async_task=maybe_skip_df.validate()
-            .set_task_instance_id("skip_map_generation")
+        "set_skip_map": Node(
+            async_task=set_bool_var.validate()
+            .set_task_instance_id("set_skip_map")
             .handle_errors()
             .with_tracing()
             .skipif(
@@ -900,11 +903,53 @@ def main(params: Params):
                 unpack_depth=1,
             )
             .set_executor("lithops"),
-            partial=(params_dict.get("skip_map_generation") or {}),
+            partial=(params_dict.get("set_skip_map") or {}),
+            method="call",
+        ),
+        "skip_traj_map": Node(
+            async_task=maybe_skip_df.validate()
+            .set_task_instance_id("skip_traj_map")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "skip": DependsOn("set_skip_map"),
+            }
+            | (params_dict.get("skip_traj_map") or {}),
             method="mapvalues",
             kwargs={
                 "argnames": ["df"],
                 "argvalues": DependsOn("split_patrol_traj_groups"),
+            },
+        ),
+        "skip_event_map": Node(
+            async_task=maybe_skip_df.validate()
+            .set_task_instance_id("skip_event_map")
+            .handle_errors()
+            .with_tracing()
+            .skipif(
+                conditions=[
+                    any_is_empty_df,
+                    any_dependency_skipped,
+                ],
+                unpack_depth=1,
+            )
+            .set_executor("lithops"),
+            partial={
+                "skip": DependsOn("set_skip_map"),
+            }
+            | (params_dict.get("skip_event_map") or {}),
+            method="mapvalues",
+            kwargs={
+                "argnames": ["df"],
+                "argvalues": DependsOn("split_pe_groups"),
             },
         ),
         "set_patrol_map_title": Node(
@@ -968,7 +1013,7 @@ def main(params: Params):
             method="mapvalues",
             kwargs={
                 "argnames": ["df"],
-                "argvalues": DependsOn("skip_map_generation"),
+                "argvalues": DependsOn("skip_traj_map"),
             },
         ),
         "rename_event_display_columns": Node(
@@ -995,7 +1040,7 @@ def main(params: Params):
             method="mapvalues",
             kwargs={
                 "argnames": ["df"],
-                "argvalues": DependsOn("split_pe_groups"),
+                "argvalues": DependsOn("skip_event_map"),
             },
         ),
         "patrol_traj_map_layers": Node(
