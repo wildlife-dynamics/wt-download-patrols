@@ -2,13 +2,13 @@ id: download_patrols
 
 requirements:
   - name: ecoscope-workflows-core
-    version: ">=0.22.2,<0.23"
+    version: ">=0.22.12, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-ecoscope
-    version: ">=0.22.2,<0.23"
+    version: ">=0.22.12, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-custom
-    version: ">=0.0.24, <0.1.0"
+    version: ">=0.0.28, <0.1.0"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
 rjsf-overrides:
@@ -21,6 +21,9 @@ rjsf-overrides:
     persist_patrol_traj.properties.filetypes.default: ["geoparquet"]
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
     persist_patrol_events.properties.filetypes.default: ["geoparquet"]
+    Process Patrol Observations.properties.groupers.properties.groupers.items.anyOf:
+      - {"$ref": "#/$defs/ValueGrouper"}
+      - {"$ref": "#/$defs/TemporalGrouper"}
     Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.title: "Category"
     Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.default: "patrol_subject"
     Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.description: >-

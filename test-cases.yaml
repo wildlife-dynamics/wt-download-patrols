@@ -92,7 +92,7 @@ month-grouper:
 
     groupers:
       groupers:
-        - "%B"
+        - temporal_index: "%B"
 
     patrol_traj:
       trajectory_segment_filter:
