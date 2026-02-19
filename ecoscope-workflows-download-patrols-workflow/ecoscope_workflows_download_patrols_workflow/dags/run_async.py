@@ -509,6 +509,7 @@ def main(params: Params):
                 "drop_columns": [
                     "id",
                 ],
+                "raise_if_not_found": False,
             }
             | (params_dict.get("customize_columns_internally") or {}),
             method="call",
@@ -528,6 +529,7 @@ def main(params: Params):
             .set_executor("lithops"),
             partial={
                 "df": DependsOn("customize_columns_internally"),
+                "raise_if_not_found": False,
             }
             | (params_dict.get("customize_columns_traj") or {}),
             method="call",
@@ -624,6 +626,7 @@ def main(params: Params):
                 "drop_columns": [
                     "patrol_type",
                 ],
+                "raise_if_not_found": False,
                 "rename_columns": {
                     "patrol_type__value": "patrol_type",
                 },
@@ -1001,6 +1004,7 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
+                "raise_if_not_found": False,
                 "rename_columns": {
                     "patrol_serial_number": "Patrol Serial",
                     "patrol_type__display": "Patrol Type",
@@ -1030,6 +1034,7 @@ def main(params: Params):
             )
             .set_executor("lithops"),
             partial={
+                "raise_if_not_found": False,
                 "rename_columns": {
                     "patrol_serial_number": "Patrol Serial",
                     "event_type": "Event Type",
