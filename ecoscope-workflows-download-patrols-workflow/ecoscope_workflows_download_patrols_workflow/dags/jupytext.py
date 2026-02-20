@@ -623,6 +623,7 @@ customize_columns_internally = (
         rename_columns={},
         drop_columns=["id"],
         retain_columns=[],
+        raise_if_not_found=False,
         **customize_columns_internally_params,
     )
     .call()
@@ -658,6 +659,7 @@ customize_columns_traj = (
         df=customize_columns_internally,
         rename_columns={},
         retain_columns=[],
+        raise_if_not_found=False,
         **customize_columns_traj_params,
     )
     .call()
@@ -817,6 +819,7 @@ traj_rename_grouper_columns = (
         df=traj_add_temporal_index,
         drop_columns=["patrol_type"],
         retain_columns=[],
+        raise_if_not_found=False,
         rename_columns={"patrol_type__value": "patrol_type"},
         **traj_rename_grouper_columns_params,
     )
@@ -1374,6 +1377,7 @@ rename_traj_display_columns = (
     .partial(
         drop_columns=[],
         retain_columns=[],
+        raise_if_not_found=False,
         rename_columns={
             "patrol_serial_number": "Patrol Serial",
             "patrol_type__display": "Patrol Type",
@@ -1413,6 +1417,7 @@ rename_event_display_columns = (
     .partial(
         drop_columns=[],
         retain_columns=[],
+        raise_if_not_found=False,
         rename_columns={
             "patrol_serial_number": "Patrol Serial",
             "event_type": "Event Type",

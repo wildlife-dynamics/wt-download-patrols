@@ -435,6 +435,7 @@ def main(params: Params):
             rename_columns={},
             drop_columns=["id"],
             retain_columns=[],
+            raise_if_not_found=False,
             **(params_dict.get("customize_columns_internally") or {}),
         )
         .call()
@@ -456,6 +457,7 @@ def main(params: Params):
             df=customize_columns_internally,
             rename_columns={},
             retain_columns=[],
+            raise_if_not_found=False,
             **(params_dict.get("customize_columns_traj") or {}),
         )
         .call()
@@ -548,6 +550,7 @@ def main(params: Params):
             df=traj_add_temporal_index,
             drop_columns=["patrol_type"],
             retain_columns=[],
+            raise_if_not_found=False,
             rename_columns={"patrol_type__value": "patrol_type"},
             **(params_dict.get("traj_rename_grouper_columns") or {}),
         )
@@ -897,6 +900,7 @@ def main(params: Params):
         .partial(
             drop_columns=[],
             retain_columns=[],
+            raise_if_not_found=False,
             rename_columns={
                 "patrol_serial_number": "Patrol Serial",
                 "patrol_type__display": "Patrol Type",
@@ -924,6 +928,7 @@ def main(params: Params):
         .partial(
             drop_columns=[],
             retain_columns=[],
+            raise_if_not_found=False,
             rename_columns={
                 "patrol_serial_number": "Patrol Serial",
                 "event_type": "Event Type",

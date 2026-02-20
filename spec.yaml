@@ -2,13 +2,13 @@ id: download_patrols
 
 requirements:
   - name: ecoscope-workflows-core
-    version: ">=0.22.2,<0.23"
+    version: ">=0.22.12, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-ecoscope
-    version: ">=0.22.2,<0.23"
+    version: ">=0.22.12, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-custom
-    version: ">=0.0.24, <0.1.0"
+    version: ">=0.0.28, <0.1.0"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
 rjsf-overrides:
@@ -18,7 +18,12 @@ rjsf-overrides:
     Generate Maps.properties.set_skip_map.properties.var.default: false
     Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
     persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
+    persist_patrol_traj.properties.filetypes.default: ["geoparquet"]
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
+    persist_patrol_events.properties.filetypes.default: ["geoparquet"]
+    Process Patrol Observations.properties.groupers.properties.groupers.items.anyOf:
+      - {"$ref": "#/$defs/ValueGrouper"}
+      - {"$ref": "#/$defs/TemporalGrouper"}
     Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.title: "Category"
     Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.default: "patrol_subject"
     Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.description: >-
@@ -172,6 +177,7 @@ workflow:
           rename_columns: {}
           drop_columns: ["id"]
           retain_columns: []
+          raise_if_not_found: false
 
       - name: Process Columns
         id: customize_columns_traj
@@ -180,6 +186,7 @@ workflow:
           df: ${{ workflow.customize_columns_internally.return }}
           rename_columns: {}
           retain_columns: []
+          raise_if_not_found: false
 
       - name: Apply SQL Query
         id: sql_query_traj
@@ -212,6 +219,7 @@ workflow:
           df: ${{ workflow.traj_add_temporal_index.return }}
           drop_columns: ["patrol_type"]
           retain_columns: []
+          raise_if_not_found: false
           rename_columns:
             patrol_type__value: "patrol_type"
 
@@ -360,6 +368,7 @@ workflow:
         partial:
           drop_columns: []
           retain_columns: []
+          raise_if_not_found: false
           rename_columns:
             patrol_serial_number: "Patrol Serial"
             patrol_type__display: "Patrol Type"
@@ -376,6 +385,7 @@ workflow:
         partial:
           drop_columns: []
           retain_columns: []
+          raise_if_not_found: false
           rename_columns:
             patrol_serial_number: "Patrol Serial"
             event_type: "Event Type"
