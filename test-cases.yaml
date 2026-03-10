@@ -47,10 +47,10 @@ base:
       query: ''
       columns: []
     persist_patrol_traj:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_trajectories"
     persist_patrol_events:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_events"
     set_skip_map:
       var: false
@@ -118,11 +118,11 @@ month-grouper:
         - {x: 1.0, y: 1.0}
 
     persist_patrol_traj:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_trajectories"
 
     persist_patrol_events:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_events"
 
     set_skip_map:
@@ -175,10 +175,10 @@ with-event-types:
         - {x: 0.0, y: 0.0}
         - {x: 1.0, y: 1.0}
     persist_patrol_traj:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_trajectories_with_events"
     persist_patrol_events:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_events_typed"
     set_skip_map:
       var: false
@@ -230,10 +230,10 @@ color-by-patrol-type:
         - {x: 0.0, y: 0.0}
         - {x: 1.0, y: 1.0}
     persist_patrol_traj:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_trajectories_by_type"
     persist_patrol_events:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
     set_skip_map:
       var: false
     base_map_defs:
@@ -286,10 +286,10 @@ skip-maps:
         - {x: 0.0, y: 0.0}
         - {x: 1.0, y: 1.0}
     persist_patrol_traj:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_trajectories"
     persist_patrol_events:
-      filetypes: ["geoparquet", "csv"]
+      filetypes: ["parquet", "csv"]
       filename_prefix: "patrol_events"
     base_map_defs:
       base_maps:
