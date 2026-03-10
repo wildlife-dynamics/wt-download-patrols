@@ -2,13 +2,13 @@ id: download_patrols
 
 requirements:
   - name: ecoscope-workflows-core
-    version: ">=0.22.12, <0.23.0"
+    version: ">=0.22.16, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-ecoscope
-    version: ">=0.22.12, <0.23.0"
+    version: ">=0.22.16, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-custom
-    version: ">=0.0.28, <0.1.0"
+    version: ">=0.0.35, <0.1.0"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
 rjsf-overrides:
@@ -18,9 +18,9 @@ rjsf-overrides:
     Generate Maps.properties.set_skip_map.properties.var.default: false
     Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
     persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
-    persist_patrol_traj.properties.filetypes.default: ["geoparquet"]
+    persist_patrol_traj.properties.filetypes.default: ["parquet"]
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
-    persist_patrol_events.properties.filetypes.default: ["geoparquet"]
+    persist_patrol_events.properties.filetypes.default: ["parquet"]
     Process Patrol Observations.properties.groupers.properties.groupers.items.anyOf:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}

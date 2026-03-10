@@ -307,13 +307,14 @@
       "properties": {
         "filetypes": {
           "default": [
-            "geoparquet"
+            "parquet"
           ],
           "items": {
             "enum": [
               "csv",
               "gpkg",
-              "geoparquet"
+              "geoparquet",
+              "parquet"
             ],
             "type": "string"
           },
@@ -339,13 +340,14 @@
       "properties": {
         "filetypes": {
           "default": [
-            "geoparquet"
+            "parquet"
           ],
           "items": {
             "enum": [
               "csv",
               "gpkg",
-              "geoparquet"
+              "geoparquet",
+              "parquet"
             ],
             "type": "string"
           },

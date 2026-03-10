@@ -7,7 +7,7 @@ This workflow helps you to download, process, and visualize patrol data from Ear
 **What this workflow does:**
 - Downloads patrol observations and associated events from EarthRanger
 - Processes patrol trajectories and events with filtering and trajectory segment analysis
-- Exports data in multiple formats (CSV, GeoParquet, GPKG)
+- Exports data in multiple formats (CSV, Parquet)
 - Creates interactive maps showing patrol trajectories and event locations
 
 **Who should use this:**
@@ -94,15 +94,15 @@ Specify which patrols and events to analyze.
 Choose output formats for patrol trajectory data.
 
 - **Filetypes** (required): Select one or more output formats
-  - Options: `csv`, `gpkg`, `geoparquet`
-  - Default: `["csv"]`
+  - Options: `csv`, `parquet`
+  - Default: `["parquet"]`
 
 #### 7. Persist Patrol Events
 Choose output formats for patrol event data.
 
 - **Filetypes** (required): Select one or more output formats
-  - Options: `csv`, `gpkg`, `geoparquet`
-  - Default: `["csv"]`
+  - Options: `csv`, ``parquet`
+  - Default: `["parquet"]`
 
 #### 8. Skip Map Generation
 Control whether maps are generated.
@@ -219,12 +219,11 @@ Your patrol data will be saved in the format(s) you selected:
 
 #### Patrol Trajectory Data
 
-- **File formats**: CSV, GeoParquet, and/or GPKG (based on your selection)
-- **Opens in**: Microsoft Excel, Google Sheets (CSV), Python/R (GeoParquet), QGIS/ArcGIS (GPKG)
+- **File formats**: CSV, Parquet (based on your selection)
+- **Opens in**: Microsoft Excel, Google Sheets (CSV), Python/R (Parquet)
 - **Best for**:
   - CSV: Quick data review and analysis
-  - GeoParquet: Large datasets, programmatic analysis
-  - GPKG: Spatial analysis in GIS software
+  - Parquet: Large datasets, programmatic analysis
 - **Contents**: Trajectory segments with movement information
   - `patrol_serial_number`: Unique identifier for each patrol
   - `patrol_type`: Type of patrol conducted
@@ -238,12 +237,11 @@ Your patrol data will be saved in the format(s) you selected:
 
 #### Patrol Event Data
 
-- **File formats**: CSV, GeoParquet, and/or GPKG (based on your selection)
-- **Opens in**: Microsoft Excel, Google Sheets (CSV), Python/R (GeoParquet), QGIS/ArcGIS (GPKG)
+- **File formats**: CSV, Parquet(based on your selection)
+- **Opens in**: Microsoft Excel, Google Sheets (CSV), Python/R (Parquet)
 - **Best for**:
   - CSV: Quick data review and analysis
-  - GeoParquet: Large datasets, programmatic analysis
-  - GPKG: Spatial analysis in GIS software
+  - Parquet: Large datasets, programmatic analysis
 - **Contents**: Events recorded during patrols with normalized event details (coded values are automatically mapped to human-readable display titles)
   - `id`: Unique identifier for the event
   - `patrol_serial_number`: Unique identifier for the associated patrol
@@ -294,12 +292,12 @@ Here are some typical scenarios and how to configure the workflow for each:
 - **Patrol Status**: `["done"]`
 - **Group Data**: `["%B"]` (group by month)
 - **Style Trajectory By Category**: `patrol_subject`
-- **Persist Patrol Trajectories**: `["geoparquet", "csv"]`
-- **Persist Patrol Events**: `["geoparquet", "csv"]`
+- **Persist Patrol Trajectories**: `["Parquet", "csv"]`
+- **Persist Patrol Events**: `["Parquet", "csv"]`
 - **Skip Map Generation**: `false`
 
 **Result**:
-- Separate CSV and GeoParquet files for each month
+- Separate CSV and Parquet files for each month
 - Separate map views for each month showing patrol trajectories colored by patrol subject
 - Event locations overlaid on each map
 
@@ -343,11 +341,10 @@ Here are some typical scenarios and how to configure the workflow for each:
   - Maximum Speed: `60.0` km/h
 - **Apply SQL Query**: `"SELECT * FROM df WHERE speed_kmhr > 10"`
 - **Style Trajectory By Category**: `patrol_subject`
-- **Persist Patrol Trajectories**: `["csv", "gpkg"]`
+- **Persist Patrol Trajectories**: `["csv", "parquet"]`
 
 **Result**:
 - Filtered trajectory data showing only fast-moving segments
-- GPKG file suitable for GIS analysis
 - Map visualization of vehicle patrol routes
 
 ---
@@ -366,12 +363,12 @@ Here are some typical scenarios and how to configure the workflow for each:
 - **Patrol Status**: `["done"]`
 - **Skip Map Generation**: `true`
 - **Persist Patrol Trajectories**: `["csv"]`
-- **Persist Patrol Events**: `["geoparquet"]`
+- **Persist Patrol Events**: `["Parquet"]`
 
 **Result**:
 - Fast processing for large datasets by skipping map generation
 - Lightweight CSV file for trajectory data
-- Efficient GeoParquet file for large event datasets
+- Efficient Parquet file for large event datasets
 - No map visualizations (to improve performance)
 
 ## Troubleshooting
