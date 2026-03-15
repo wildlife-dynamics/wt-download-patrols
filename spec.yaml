@@ -8,11 +8,15 @@ requirements:
     version: ">=0.22.16, <0.23.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-custom
-    version: ">=0.0.35, <0.1.0"
+    version: ">=0.0.36, <0.1.0"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
 
 rjsf-overrides:
   properties:
+    Patrol and Event Types.properties.er_patrol_and_events_params.properties.patrol_types.description: >-
+      Specify the patrol type(s) to download. Enter the "Patrol Types" value for each patrol type you want to include in the output — one per field (e.g. "ecoscope_patrol"). If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types. Leave this section empty to include all patrol types
+    Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.description: >-
+      Specify the event type(s) to include (optional). Enter the "Event Types" value for each event type you want to include in the output — one per field (e.g. "wildlife_sighting_rep"). If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types. Leave this section empty to include all event types
     Generate Maps.properties.set_skip_map.properties.var.description: >-
       Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.
     Generate Maps.properties.set_skip_map.properties.var.default: false
@@ -36,11 +40,20 @@ rjsf-overrides:
     ]
 
   $defs:
-    ValueGrouper.oneOf: [
-      {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
-      {"const": "patrol_type", "title": "Patrol Type"},
-      {"const": "patrol_subject", "title": "Patrol Subject"},
-    ]
+    ValueGrouper:
+      title: "Category"
+      type: "object"
+      properties:
+        index_name:
+          title: "Index Name"
+          type: "string"
+          oneOf:
+            - const: "patrol_serial_number"
+              title: "Patrol Serial Number"
+            - const: "patrol_type"
+              title: "Patrol Type"
+            - const: "patrol_subject"
+              title: "Patrol Subject"
 
   uiSchema:
     Process Patrol Observations.filter_patrol_obs.filter_point_coords.items.ui:options.label: false

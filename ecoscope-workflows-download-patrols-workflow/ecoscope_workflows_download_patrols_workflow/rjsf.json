@@ -82,7 +82,7 @@
               },
               "title": "Patrol Types",
               "type": "array",
-              "description": "Specify the patrol type(s) to analyze (optional). Leave empty to analyze all patrol types."
+              "description": "Specify the patrol type(s) to download. Enter the \"Patrol Types\" value for each patrol type you want to include in the output \u2014 one per field (e.g. \"ecoscope_patrol\"). If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types. Leave this section empty to include all patrol types"
             },
             "event_types": {
               "items": {
@@ -90,7 +90,7 @@
               },
               "title": "Event Types",
               "type": "array",
-              "description": "Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types."
+              "description": "Specify the event type(s) to include (optional). Enter the \"Event Types\" value for each event type you want to include in the output \u2014 one per field (e.g. \"wildlife_sighting_rep\"). If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types. Leave this section empty to include all event types"
             },
             "status": {
               "default": [
@@ -750,32 +750,28 @@
       "type": "object"
     },
     "ValueGrouper": {
-      "properties": {
-        "index_name": {
-          "oneOf": [],
-          "title": "Category",
-          "type": "string"
-        }
-      },
-      "required": [
-        "index_name"
-      ],
       "title": "Category",
       "type": "object",
-      "oneOf": [
-        {
-          "const": "patrol_serial_number",
-          "title": "Patrol Serial Number"
-        },
-        {
-          "const": "patrol_type",
-          "title": "Patrol Type"
-        },
-        {
-          "const": "patrol_subject",
-          "title": "Patrol Subject"
+      "properties": {
+        "index_name": {
+          "title": "Index Name",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "patrol_serial_number",
+              "title": "Patrol Serial Number"
+            },
+            {
+              "const": "patrol_type",
+              "title": "Patrol Type"
+            },
+            {
+              "const": "patrol_subject",
+              "title": "Patrol Subject"
+            }
+          ]
         }
-      ]
+      }
     },
     "BoundingBox": {
       "properties": {

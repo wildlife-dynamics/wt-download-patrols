@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, constr
+from pydantic import BaseModel, ConfigDict, Field, confloat, constr
 
 
 class WorkflowDetails(BaseModel):
@@ -31,12 +31,12 @@ class ErPatrolAndEventsParams(BaseModel):
     )
     patrol_types: List[str] = Field(
         ...,
-        description="Specify the patrol type(s) to analyze (optional). Leave empty to analyze all patrol types.",
+        description='Specify the patrol type(s) to download. Enter the "Patrol Types" value for each patrol type you want to include in the output — one per field (e.g. "ecoscope_patrol"). If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types. Leave this section empty to include all patrol types',
         title="Patrol Types",
     )
     event_types: List[str] = Field(
         ...,
-        description="Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types.",
+        description='Specify the event type(s) to include (optional). Enter the "Event Types" value for each event type you want to include in the output — one per field (e.g. "wildlife_sighting_rep"). If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types. Leave this section empty to include all event types',
         title="Event Types",
     )
     status: Optional[List[StatusEnum]] = Field(
@@ -348,12 +348,8 @@ class TemporalGrouper(BaseModel):
     temporal_index: str = Field(..., title="Time")
 
 
-class ValueGrouper1(BaseModel):
-    index_name: str = Field(..., title="Category")
-
-
-class ValueGrouper(RootModel[ValueGrouper1]):
-    root: ValueGrouper1 = Field(..., title="Category")
+class ValueGrouper(BaseModel):
+    index_name: Optional[str] = Field(None, title="Index Name")
 
 
 class BoundingBox(BaseModel):
