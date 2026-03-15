@@ -245,6 +245,117 @@ color-by-patrol-type:
           max_zoom: 17
           min_zoom: null
 
+value-grouper:
+  name: Value Grouper by Patrol Type
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Process and visualize patrol observations and events."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2025-12-21T00:00:00Z"
+      until: "2025-12-23T23:59:59Z"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+      include_null_geometry: false
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_type"
+    filter_patrol_events:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    groupers:
+      groupers:
+        - index_name: "patrol_type"
+    persist_patrol_traj:
+      filetypes: ["csv"]
+      filename_prefix: "patrol_trajectories_by_type"
+    persist_patrol_events:
+      filetypes: ["csv"]
+      filename_prefix: "patrol_events_by_type"
+    set_skip_map:
+      var: false
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
+sql-filter:
+  name: SQL Filter Patrols by Speed
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Filter patrol trajectories by speed using SQL."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00Z"
+      until: "2015-02-28T23:59:59Z"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+      include_null_geometry: false
+    patrol_traj:
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    filter_patrol_events:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+    sql_query_traj:
+      query: >-
+        SELECT * FROM df WHERE speed_kmhr > 5.0
+      columns: ["segment_start", "segment_end", "timespan_seconds", "dist_meters", "speed_kmhr", "heading", "geometry", "patrol_serial_number", "patrol_subject", "patrol_type", "patrol_type__display", "patrol_type__value", "groupby_col"]
+    groupers:
+      groupers: []
+    persist_patrol_traj:
+      filetypes: ["csv"]
+      filename_prefix: "patrols_fast"
+    persist_patrol_events:
+      filetypes: ["csv"]
+      filename_prefix: "patrol_events"
+    set_skip_map:
+      var: false
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
 skip-maps:
   name: Test Skipping Map Generation
   mock_io: true
