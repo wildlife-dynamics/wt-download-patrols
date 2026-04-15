@@ -47,6 +47,11 @@ class ErPatrolAndEventsParams(BaseModel):
     include_null_geometry: Optional[bool] = Field(
         True, title="Include Events Without a Geometry (point or polygon)"
     )
+    patrols_overlap_daterange: Optional[bool] = Field(
+        True,
+        description="Whether or not to include patrols that start or end outside of the time range",
+        title="Patrols Overlap Daterange",
+    )
 
 
 class CustomizeColumnsTraj(BaseModel):
