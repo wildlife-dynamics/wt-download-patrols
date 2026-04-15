@@ -110,6 +110,13 @@
           "default": true,
           "title": "Include Events Without a Geometry (point or polygon)",
           "type": "boolean"
+        },
+        "patrols_overlap_daterange": {
+          "default": true,
+          "title": "Patrols Overlap Daterange",
+          "type": "boolean",
+          "description": "Whether or not to include patrols that start or end outside of the time range",
+          "ecoscope:advanced": true
         }
       },
       "required": [
@@ -786,7 +793,8 @@
         "patrol_types",
         "event_types",
         "status",
-        "include_null_geometry"
+        "include_null_geometry",
+        "patrols_overlap_daterange"
       ]
     },
     "sql_query_traj": {
