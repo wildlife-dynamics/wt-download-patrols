@@ -299,14 +299,14 @@ workflow:
     id: split_patrol_traj_groups
     task: split_groups
     partial:
-      df: ${{ workflow.traj_colormap.return }}
+      df: ${{ workflow.patrol_traj_cols_to_string.return }}
       groupers: ${{ workflow.groupers.return }}
 
   - name: Split Patrol Events by Group
     id: split_pe_groups
     task: split_groups
     partial:
-      df: ${{ workflow.pe_colormap.return }}
+      df: ${{ workflow.pe_cols_to_string.return }}
       groupers: ${{ workflow.groupers.return }}
 
   - name: Persist Patrol Trajectories

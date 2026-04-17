@@ -738,7 +738,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=traj_colormap,
+            df=patrol_traj_cols_to_string,
             groupers=groupers,
             **(params_dict.get("split_patrol_traj_groups") or {}),
         )
@@ -759,7 +759,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=pe_colormap,
+            df=pe_cols_to_string,
             groupers=groupers,
             **(params_dict.get("split_pe_groups") or {}),
         )

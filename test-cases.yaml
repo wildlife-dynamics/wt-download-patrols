@@ -246,7 +246,7 @@ color-by-patrol-type:
           min_zoom: null
 
 value-grouper:
-  name: Value Grouper by Patrol Type
+  name: Value Grouper by Patrol Serial Number
   mock_io: true
   params:
     workflow_details:
@@ -285,13 +285,13 @@ value-grouper:
         - {x: 1.0, y: 1.0}
     groupers:
       groupers:
-        - index_name: "patrol_type"
+        - index_name: "patrol_serial_number"
     persist_patrol_traj:
       filetypes: ["csv"]
-      filename_prefix: "patrol_trajectories_by_type"
+      filename_prefix: "patrol_trajectories_by_serial"
     persist_patrol_events:
       filetypes: ["csv"]
-      filename_prefix: "patrol_events_by_type"
+      filename_prefix: "patrol_events_by_serial"
     set_skip_map:
       var: false
     base_map_defs:
