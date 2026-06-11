@@ -319,9 +319,9 @@ workflow:
 
   - name: Persist Patrol Trajectories
     id: persist_patrol_traj
-    task: persist_df_grouped
+    task: persist_df_for_results_download
     partial:
-      iterables: ${{ workflow.split_patrol_traj_groups.return }}
+      df_or_grouped_dfs: ${{ workflow.split_patrol_traj_groups.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
     skipif:
@@ -330,9 +330,9 @@ workflow:
 
   - name: Persist Patrol Events
     id: persist_patrol_events
-    task: persist_df_grouped
+    task: persist_df_for_results_download
     partial:
-      iterables: ${{ workflow.split_pe_groups.return }}
+      df_or_grouped_dfs: ${{ workflow.split_pe_groups.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
     skipif:
