@@ -22,6 +22,16 @@ rjsf-overrides:
       Specify the patrol type(s) to download. Enter the "Patrol Types" value for each patrol type you want to include in the output — one per field (e.g. "ecoscope_patrol"). If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types. Leave this section empty to include all patrol types
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.description: >-
       Specify the event type(s) to include (optional). Enter the "Event Types" value for each event type you want to include in the output — one per field (e.g. "wildlife_sighting_rep"). If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types. Leave this section empty to include all event types
+    Patrol and Event Types.properties.er_patrol_and_events_params.properties.patrol_types.ecoscope:transform:
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: patrol_type
+          depends_on: properties.er_client_name.properties.data_source.properties.name
+    Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.ecoscope:transform:
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: event_type
+          depends_on: properties.er_client_name.properties.data_source.properties.name
     Generate Maps.properties.set_skip_map.properties.var.description: >-
       Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.
     Generate Maps.properties.set_skip_map.properties.var.default: false
@@ -319,9 +329,9 @@ workflow:
 
   - name: Persist Patrol Trajectories
     id: persist_patrol_traj
-    task: persist_df_for_results_download
+    task: persist_grouped_dfs_for_results_download
     partial:
-      df_or_grouped_dfs: ${{ workflow.split_patrol_traj_groups.return }}
+      grouped_dfs: ${{ workflow.split_patrol_traj_groups.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
     skipif:
@@ -330,9 +340,9 @@ workflow:
 
   - name: Persist Patrol Events
     id: persist_patrol_events
-    task: persist_df_for_results_download
+    task: persist_grouped_dfs_for_results_download
     partial:
-      df_or_grouped_dfs: ${{ workflow.split_pe_groups.return }}
+      grouped_dfs: ${{ workflow.split_pe_groups.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
     skipif:

@@ -82,7 +82,16 @@
               },
               "title": "Patrol Types",
               "type": "array",
-              "description": "Specify the patrol type(s) to download. Enter the \"Patrol Types\" value for each patrol type you want to include in the output \u2014 one per field (e.g. \"ecoscope_patrol\"). If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types. Leave this section empty to include all patrol types"
+              "description": "Specify the patrol type(s) to download. Enter the \"Patrol Types\" value for each patrol type you want to include in the output \u2014 one per field (e.g. \"ecoscope_patrol\"). If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types. Leave this section empty to include all patrol types",
+              "ecoscope:transform": [
+                {
+                  "transformer": "EarthRangerEnumResolver",
+                  "transformer_kws": {
+                    "type": "patrol_type",
+                    "depends_on": "properties.er_client_name.properties.data_source.properties.name"
+                  }
+                }
+              ]
             },
             "event_types": {
               "items": {
@@ -90,7 +99,16 @@
               },
               "title": "Event Types",
               "type": "array",
-              "description": "Specify the event type(s) to include (optional). Enter the \"Event Types\" value for each event type you want to include in the output \u2014 one per field (e.g. \"wildlife_sighting_rep\"). If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types. Leave this section empty to include all event types"
+              "description": "Specify the event type(s) to include (optional). Enter the \"Event Types\" value for each event type you want to include in the output \u2014 one per field (e.g. \"wildlife_sighting_rep\"). If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types. Leave this section empty to include all event types",
+              "ecoscope:transform": [
+                {
+                  "transformer": "EarthRangerEnumResolver",
+                  "transformer_kws": {
+                    "type": "event_type",
+                    "depends_on": "properties.er_client_name.properties.data_source.properties.name"
+                  }
+                }
+              ]
             },
             "status": {
               "default": [

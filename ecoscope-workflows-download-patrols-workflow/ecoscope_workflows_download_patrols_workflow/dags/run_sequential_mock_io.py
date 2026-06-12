@@ -89,7 +89,7 @@ from ecoscope.platform.tasks.transformation import (
 )
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
 from ecoscope_workflows_ext_custom.tasks.io import (
-    persist_df_for_results_download as persist_df_for_results_download,
+    persist_grouped_dfs_for_results_download as persist_grouped_dfs_for_results_download,
 )
 from ecoscope_workflows_ext_custom.tasks.skip import maybe_skip_df as maybe_skip_df
 from ecoscope_workflows_ext_custom.tasks.transformation import (
@@ -785,7 +785,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     persist_patrol_traj = (
-        task(persist_df_for_results_download)
+        task(persist_grouped_dfs_for_results_download)
         .validate()
         .set_task_instance_id("persist_patrol_traj")
         .handle_errors()
@@ -797,7 +797,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df_or_grouped_dfs=split_patrol_traj_groups,
+            grouped_dfs=split_patrol_traj_groups,
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
             **(params.get("persist_patrol_traj") or {}),
@@ -806,7 +806,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     persist_patrol_events = (
-        task(persist_df_for_results_download)
+        task(persist_grouped_dfs_for_results_download)
         .validate()
         .set_task_instance_id("persist_patrol_events")
         .handle_errors()
@@ -818,7 +818,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df_or_grouped_dfs=split_pe_groups,
+            grouped_dfs=split_pe_groups,
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
             **(params.get("persist_patrol_events") or {}),
