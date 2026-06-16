@@ -337,8 +337,6 @@
           "items": {
             "enum": [
               "csv",
-              "gpkg",
-              "geoparquet",
               "parquet"
             ],
             "type": "string"
@@ -370,8 +368,6 @@
           "items": {
             "enum": [
               "csv",
-              "gpkg",
-              "geoparquet",
               "parquet"
             ],
             "type": "string"
