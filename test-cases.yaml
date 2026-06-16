@@ -61,7 +61,6 @@ base:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           opacity: 0.5
           max_zoom: 17
-          min_zoom: null
 
 month-grouper:
   name: Monthly Grouper
@@ -189,7 +188,6 @@ with-event-types:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           opacity: 0.5
           max_zoom: 17
-          min_zoom: null
 
 color-by-patrol-type:
   name: Test Case coloring by patrol type
@@ -243,7 +241,6 @@ color-by-patrol-type:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           opacity: 0.5
           max_zoom: 17
-          min_zoom: null
 
 value-grouper:
   name: Value Grouper by Patrol Serial Number
@@ -409,6 +406,5 @@ skip-maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           opacity: 0.5
           max_zoom: 17
-          min_zoom: null
     set_skip_map:
       var: true
