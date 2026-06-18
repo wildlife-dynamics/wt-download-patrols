@@ -221,7 +221,7 @@ workflow:
     tasks:
       - name: Filters
         id: patrol_filters
-        task: set_patrol_filters
+        task: set_traj_filters
 
   # combined-filter splitters — all inputs via `partial`, so they render no form fields.
   # Each returns ONE value (the compiler cannot subscript `.return[i]` in `${{ }}`).

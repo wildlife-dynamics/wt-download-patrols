@@ -93,7 +93,7 @@ from ecoscope_workflows_ext_custom.tasks.config import (
     get_segment_filter as get_segment_filter,
 )
 from ecoscope_workflows_ext_custom.tasks.config import (
-    set_patrol_filters as set_patrol_filters,
+    set_traj_filters as set_traj_filters,
 )
 from ecoscope_workflows_ext_custom.tasks.io import (
     persist_grouped_dfs_for_results_download as persist_grouped_dfs_for_results_download,
@@ -336,7 +336,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     patrol_filters = (
-        task(set_patrol_filters)
+        task(set_traj_filters)
         .validate()
         .set_task_instance_id("patrol_filters")
         .handle_errors()
