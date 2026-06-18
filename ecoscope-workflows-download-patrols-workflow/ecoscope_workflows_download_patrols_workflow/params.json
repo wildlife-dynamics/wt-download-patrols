@@ -126,9 +126,48 @@
       "type": "object",
       "title": ""
     },
-    "patrol_traj": {
+    "patrol_filters": {
       "additionalProperties": false,
       "properties": {
+        "bounding_box": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/BoundingBox"
+            }
+          ],
+          "default": {
+            "min_y": -90.0,
+            "max_y": 90.0,
+            "min_x": -180.0,
+            "max_x": 180.0
+          },
+          "title": "Bounding Box",
+          "description": "Only include observations/events inside this bounding box.",
+          "ecoscope:advanced": true
+        },
+        "filter_point_coords": {
+          "default": [
+            {
+              "y": 90.0,
+              "x": 180.0
+            },
+            {
+              "y": 0.0,
+              "x": 0.0
+            },
+            {
+              "y": 1.0,
+              "x": 1.0
+            }
+          ],
+          "items": {
+            "$ref": "#/$defs/Coordinate"
+          },
+          "title": "Filter Exact Point Coordinates",
+          "type": "array",
+          "description": "Exclude observations/events at these exact coordinates.",
+          "ecoscope:advanced": true
+        },
         "trajectory_segment_filter": {
           "allOf": [
             {
@@ -143,57 +182,28 @@
             "min_speed_kmhr": 0.01,
             "max_speed_kmhr": 500
           },
-          "title": " ",
-          "description": "Filter track data by setting limits on track segment length, duration, and speed. Segments outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
+          "title": "Trajectory Filter",
+          "description": "Drop trajectory segments outside these length/time/speed bounds.",
           "ecoscope:advanced": true
         }
       },
-      "required": [],
       "type": "object",
-      "title": "Trajectory Segment Filter"
+      "required": [],
+      "title": "Filters"
     },
-    "customize_columns_traj": {
+    "set_patrol_traj_color_column": {
       "additionalProperties": false,
       "properties": {
-        "drop_columns": {
-          "default": [],
-          "items": {
-            "type": "string"
-          },
-          "title": "Drop Columns",
-          "type": "array",
-          "description": "List of columns to drop.",
-          "ecoscope:advanced": true
+        "var": {
+          "title": "",
+          "type": "string"
         }
       },
-      "required": [],
+      "required": [
+        "var"
+      ],
       "type": "object",
-      "title": "Process Columns"
-    },
-    "sql_query_traj": {
-      "additionalProperties": false,
-      "properties": {
-        "query": {
-          "default": "",
-          "title": "SQL Query",
-          "type": "string",
-          "description": "SQL query string to apply to the DataFrame. Leaves it unchanged when the field is emptyUse 'df' as the table name in the query.",
-          "ecoscope:advanced": true
-        },
-        "columns": {
-          "default": null,
-          "items": {
-            "type": "string"
-          },
-          "title": "Columns",
-          "type": "array",
-          "description": "Optional list of column names to include in the SQL query context. If specified, only these columns will be available in the 'df' table for querying. Use this to exclude columns with unsupported data types (list, dict) that cannot be stored in SQLite. If not specified, all columns are included.",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Apply SQL Query"
+      "title": "Trajectory Style"
     },
     "groupers": {
       "additionalProperties": false,
@@ -223,53 +233,20 @@
       "required": [],
       "title": "Group Data"
     },
-    "set_patrol_traj_color_column": {
+    "sql_query_traj": {
       "additionalProperties": false,
       "properties": {
-        "var": {
-          "title": "",
-          "type": "string"
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Style Trajectory By Category"
-    },
-    "filter_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "bounding_box": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/BoundingBox"
-            }
-          ],
-          "default": {
-            "min_y": -90.0,
-            "max_y": 90.0,
-            "min_x": -180.0,
-            "max_x": 180.0
-          },
-          "title": "Bounding Box",
-          "description": "Filter events to inside these bounding coordinates.",
-          "ecoscope:advanced": true
-        },
-        "filter_point_coords": {
-          "default": [],
-          "items": {
-            "$ref": "#/$defs/Coordinate"
-          },
-          "title": "Filter Exact Point Coordinates",
-          "type": "array",
-          "description": "By adding a filter, the workflow will not include events recorded at the specified coordinates.",
+        "query": {
+          "default": "",
+          "title": "SQL Query",
+          "type": "string",
+          "description": "SQL query string to apply to the DataFrame. Leaves it unchanged when the field is emptyUse 'df' as the table name in the query.",
           "ecoscope:advanced": true
         }
       },
       "required": [],
       "type": "object",
-      "title": "Apply Coordinate Filter to Patrol Events"
+      "title": "Apply SQL Query (Trajectories)"
     },
     "persist_patrol_traj": {
       "additionalProperties": false,
@@ -337,19 +314,19 @@
       "type": "object",
       "title": "Persist Patrol Events"
     },
-    "set_skip_map": {
+    "generate_maps": {
       "additionalProperties": false,
       "properties": {
-        "var": {
-          "title": "",
-          "type": "boolean"
+        "value": {
+          "default": true,
+          "title": "Value",
+          "type": "boolean",
+          "description": "The boolean value to negate."
         }
       },
-      "required": [
-        "var"
-      ],
       "type": "object",
-      "title": "Skip Map Generation"
+      "required": [],
+      "title": "Generate Maps in Dashboard"
     },
     "base_map_defs": {
       "additionalProperties": false,
@@ -587,6 +564,56 @@
       "title": "TimezoneInfo",
       "type": "object"
     },
+    "BoundingBox": {
+      "properties": {
+        "min_y": {
+          "default": -90.0,
+          "ecoscope:advanced": true,
+          "title": "Min Latitude",
+          "type": "number"
+        },
+        "max_y": {
+          "default": 90.0,
+          "ecoscope:advanced": true,
+          "title": "Max Latitude",
+          "type": "number"
+        },
+        "min_x": {
+          "default": -180.0,
+          "ecoscope:advanced": true,
+          "title": "Min Longitude",
+          "type": "number"
+        },
+        "max_x": {
+          "default": 180.0,
+          "ecoscope:advanced": true,
+          "title": "Max Longitude",
+          "type": "number"
+        }
+      },
+      "title": "BoundingBox",
+      "type": "object"
+    },
+    "Coordinate": {
+      "properties": {
+        "y": {
+          "description": "Example -0.15293",
+          "title": "Latitude",
+          "type": "number"
+        },
+        "x": {
+          "description": "Example 37.30906",
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "y",
+        "x"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
     "TrajectorySegmentFilter": {
       "properties": {
         "min_length_meters": {
@@ -707,56 +734,6 @@
       ],
       "title": "Category",
       "type": "object"
-    },
-    "BoundingBox": {
-      "properties": {
-        "min_y": {
-          "default": -90.0,
-          "ecoscope:advanced": true,
-          "title": "Min Latitude",
-          "type": "number"
-        },
-        "max_y": {
-          "default": 90.0,
-          "ecoscope:advanced": true,
-          "title": "Max Latitude",
-          "type": "number"
-        },
-        "min_x": {
-          "default": -180.0,
-          "ecoscope:advanced": true,
-          "title": "Min Longitude",
-          "type": "number"
-        },
-        "max_x": {
-          "default": 180.0,
-          "ecoscope:advanced": true,
-          "title": "Max Longitude",
-          "type": "number"
-        }
-      },
-      "title": "BoundingBox",
-      "type": "object"
-    },
-    "Coordinate": {
-      "properties": {
-        "y": {
-          "description": "Example -0.15293",
-          "title": "Latitude",
-          "type": "number"
-        },
-        "x": {
-          "description": "Example 37.30906",
-          "title": "Longitude",
-          "type": "number"
-        }
-      },
-      "required": [
-        "y",
-        "x"
-      ],
-      "title": "Coordinate",
-      "type": "object"
     }
   },
   "uiSchema": {
@@ -782,16 +759,11 @@
         "patrols_overlap_daterange"
       ]
     },
-    "sql_query_traj": {
-      "ui:order": [
-        "query",
-        "columns"
-      ]
-    },
-    "filter_patrol_events": {
+    "patrol_filters": {
       "ui:order": [
         "bounding_box",
-        "filter_point_coords"
+        "filter_point_coords",
+        "trajectory_segment_filter"
       ]
     },
     "persist_patrol_traj": {
@@ -811,15 +783,13 @@
       "er_client_name",
       "time_range",
       "er_patrol_and_events_params",
-      "patrol_traj",
-      "customize_columns_traj",
-      "sql_query_traj",
-      "groupers",
+      "patrol_filters",
       "set_patrol_traj_color_column",
-      "filter_patrol_events",
+      "groupers",
+      "sql_query_traj",
       "persist_patrol_traj",
       "persist_patrol_events",
-      "set_skip_map",
+      "generate_maps",
       "base_map_defs"
     ]
   },

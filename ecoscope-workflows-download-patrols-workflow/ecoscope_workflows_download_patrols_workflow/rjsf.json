@@ -131,7 +131,7 @@
             },
             "include_null_geometry": {
               "default": true,
-              "title": "Include Events Without a Geometry (point or polygon)",
+              "title": "Include events without a location",
               "type": "boolean"
             },
             "patrols_overlap_daterange": {
@@ -151,14 +151,53 @@
         }
       }
     },
-    "Process Patrol Observations": {
+    "Filter Locations/Segments": {
       "type": "object",
-      "description": "Process patrol observations by applying filters, column transformations, and SQL queries.",
+      "description": "Filter patrol observations and events by location (bounding box + excluded points) and filter the constructed trajectory segments. One config drives both datasets.",
       "ecoscope:task_group": true,
       "properties": {
-        "patrol_traj": {
+        "patrol_filters": {
           "additionalProperties": false,
           "properties": {
+            "bounding_box": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/BoundingBox"
+                }
+              ],
+              "default": {
+                "min_y": -90.0,
+                "max_y": 90.0,
+                "min_x": -180.0,
+                "max_x": 180.0
+              },
+              "title": "Bounding Box",
+              "description": "Only include patrol observations and events whose coordinates fall inside this bounding box. Applies to BOTH the patrol trajectories and the patrol events.",
+              "ecoscope:advanced": true
+            },
+            "filter_point_coords": {
+              "default": [
+                {
+                  "y": 90.0,
+                  "x": 180.0
+                },
+                {
+                  "y": 0.0,
+                  "x": 0.0
+                },
+                {
+                  "y": 1.0,
+                  "x": 1.0
+                }
+              ],
+              "items": {
+                "$ref": "#/$defs/Coordinate"
+              },
+              "title": "Filter Exact Point Coordinates",
+              "type": "array",
+              "description": "Exclude observations and events recorded at these exact coordinates (e.g. known bad GPS fixes). Applies to BOTH the patrol trajectories and the patrol events.",
+              "ecoscope:advanced": true
+            },
             "trajectory_segment_filter": {
               "allOf": [
                 {
@@ -173,58 +212,56 @@
                 "min_speed_kmhr": 0.01,
                 "max_speed_kmhr": 500
               },
-              "title": " ",
-              "description": "Filter track data by setting limits on track segment length, duration, and speed. Segments outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
+              "title": "Trajectory Filter",
+              "description": "Drop trajectory segments outside these length / time / speed bounds (e.g. to remove implausible jumps). Applies to the patrol trajectories only.",
               "ecoscope:advanced": true
             }
           },
-          "required": [],
           "type": "object",
-          "title": "Trajectory Segment Filter"
-        },
-        "customize_columns_traj": {
-          "additionalProperties": false,
-          "properties": {
-            "drop_columns": {
-              "default": [],
-              "items": {
-                "type": "string"
-              },
-              "title": "Drop Columns",
-              "type": "array",
-              "description": "List of columns to drop.",
-              "ecoscope:advanced": true
-            }
-          },
           "required": [],
-          "type": "object",
-          "title": "Process Columns"
-        },
-        "sql_query_traj": {
-          "additionalProperties": false,
-          "properties": {
-            "query": {
-              "default": "",
-              "title": "SQL Query",
-              "type": "string",
-              "description": "SQL query string to apply to the DataFrame. Leaves it unchanged when the field is emptyUse 'df' as the table name in the query.",
-              "ecoscope:advanced": true
+          "title": "Filters"
+        }
+      }
+    },
+    "set_patrol_traj_color_column": {
+      "additionalProperties": false,
+      "properties": {
+        "var": {
+          "title": "Category",
+          "type": "string",
+          "default": "patrol_subject",
+          "description": "Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.",
+          "oneOf": [
+            {
+              "const": "patrol_type",
+              "title": "Patrol Type"
             },
-            "columns": {
-              "default": null,
-              "items": {
-                "type": "string"
-              },
-              "title": "Columns",
-              "type": "array",
-              "description": "Optional list of column names to include in the SQL query context. If specified, only these columns will be available in the 'df' table for querying. Use this to exclude columns with unsupported data types (list, dict) that cannot be stored in SQLite. If not specified, all columns are included.",
-              "ecoscope:advanced": true
+            {
+              "const": "patrol_status",
+              "title": "Patrol Status"
+            },
+            {
+              "const": "patrol_subject",
+              "title": "Patrol Subject"
+            },
+            {
+              "const": "patrol_serial_number",
+              "title": "Patrol Serial Number"
             }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Apply SQL Query"
-        },
+          ]
+        }
+      },
+      "required": [
+        "var"
+      ],
+      "type": "object",
+      "title": "Trajectory Style"
+    },
+    "Group Data": {
+      "type": "object",
+      "description": "Configure how patrols and events are grouped (by category or temporal index) and split into per-group datasets for export and mapping.",
+      "ecoscope:task_group": true,
+      "properties": {
         "groupers": {
           "additionalProperties": false,
           "properties": {
@@ -243,87 +280,34 @@
               },
               "title": " ",
               "type": "array",
-              "description": "            Specify how the data should be grouped to create the views for your dashboard.\n            This field is optional; if left blank, all the data will appear in a single view.\n            "
+              "description": ""
             }
           },
           "type": "object",
           "required": [],
-          "title": "Group Data"
-        },
-        "set_patrol_traj_color_column": {
-          "additionalProperties": false,
-          "properties": {
-            "var": {
-              "title": "Category",
-              "type": "string",
-              "default": "patrol_subject",
-              "description": "Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.",
-              "oneOf": [
-                {
-                  "const": "patrol_type",
-                  "title": "Patrol Type"
-                },
-                {
-                  "const": "patrol_status",
-                  "title": "Patrol Status"
-                },
-                {
-                  "const": "patrol_subject",
-                  "title": "Patrol Subject"
-                },
-                {
-                  "const": "patrol_serial_number",
-                  "title": "Patrol Serial Number"
-                }
-              ]
-            }
-          },
-          "required": [
-            "var"
-          ],
-          "type": "object",
-          "title": "Style Trajectory By Category"
+          "title": ""
         }
       }
     },
-    "Process Patrol Events": {
+    "Refine Patrol Data": {
       "type": "object",
-      "description": "Process patrol events by applying filters.",
+      "description": "Reshape and organize your patrol trajectory data before downloading. Applies to the downloaded files only \u2014 not the generated map.",
       "ecoscope:task_group": true,
       "properties": {
-        "filter_patrol_events": {
+        "sql_query_traj": {
           "additionalProperties": false,
           "properties": {
-            "bounding_box": {
-              "allOf": [
-                {
-                  "$ref": "#/$defs/BoundingBox"
-                }
-              ],
-              "default": {
-                "min_y": -90.0,
-                "max_y": 90.0,
-                "min_x": -180.0,
-                "max_x": 180.0
-              },
-              "title": "Bounding Box",
-              "description": "Filter events to inside these bounding coordinates.",
-              "ecoscope:advanced": true
-            },
-            "filter_point_coords": {
-              "default": [],
-              "items": {
-                "$ref": "#/$defs/Coordinate"
-              },
-              "title": "Filter Exact Point Coordinates",
-              "type": "array",
-              "description": "By adding a filter, the workflow will not include events recorded at the specified coordinates.",
+            "query": {
+              "default": "",
+              "title": "SQL Query",
+              "type": "string",
+              "description": "Write a SQL query to filter or transform your patrol trajectory data. Leave blank to skip this step. Use 'df' as the table name (e.g. SELECT * FROM df WHERE speed_kmhr > 5). Complex columns are sanitized to JSON strings automatically, so any column can be queried. Queries apply only to your downloaded files, not the generated map.",
               "ecoscope:advanced": true
             }
           },
           "required": [],
           "type": "object",
-          "title": "Apply Coordinate Filter to Patrol Events"
+          "title": "Apply SQL Query (Trajectories)"
         }
       }
     },
@@ -394,21 +378,19 @@
       "description": "Generate maps to visualize patrol trajectories and events.",
       "ecoscope:task_group": true,
       "properties": {
-        "set_skip_map": {
+        "generate_maps": {
           "additionalProperties": false,
           "properties": {
-            "var": {
-              "title": "",
+            "value": {
+              "default": true,
+              "title": "Generate maps in dashboard",
               "type": "boolean",
-              "description": "Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.",
-              "default": false
+              "description": ""
             }
           },
-          "required": [
-            "var"
-          ],
           "type": "object",
-          "title": "Skip Map Generation"
+          "required": [],
+          "title": ""
         },
         "base_map_defs": {
           "additionalProperties": false,
@@ -648,6 +630,56 @@
       "title": "TimezoneInfo",
       "type": "object"
     },
+    "BoundingBox": {
+      "properties": {
+        "min_y": {
+          "default": -90.0,
+          "ecoscope:advanced": true,
+          "title": "Min Latitude",
+          "type": "number"
+        },
+        "max_y": {
+          "default": 90.0,
+          "ecoscope:advanced": true,
+          "title": "Max Latitude",
+          "type": "number"
+        },
+        "min_x": {
+          "default": -180.0,
+          "ecoscope:advanced": true,
+          "title": "Min Longitude",
+          "type": "number"
+        },
+        "max_x": {
+          "default": 180.0,
+          "ecoscope:advanced": true,
+          "title": "Max Longitude",
+          "type": "number"
+        }
+      },
+      "title": "BoundingBox",
+      "type": "object"
+    },
+    "Coordinate": {
+      "properties": {
+        "y": {
+          "description": "Example -0.15293",
+          "title": "Latitude",
+          "type": "number"
+        },
+        "x": {
+          "description": "Example 37.30906",
+          "title": "Longitude",
+          "type": "number"
+        }
+      },
+      "required": [
+        "y",
+        "x"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
     "TrajectorySegmentFilter": {
       "properties": {
         "min_length_meters": {
@@ -779,56 +811,6 @@
           ]
         }
       }
-    },
-    "BoundingBox": {
-      "properties": {
-        "min_y": {
-          "default": -90.0,
-          "ecoscope:advanced": true,
-          "title": "Min Latitude",
-          "type": "number"
-        },
-        "max_y": {
-          "default": 90.0,
-          "ecoscope:advanced": true,
-          "title": "Max Latitude",
-          "type": "number"
-        },
-        "min_x": {
-          "default": -180.0,
-          "ecoscope:advanced": true,
-          "title": "Min Longitude",
-          "type": "number"
-        },
-        "max_x": {
-          "default": 180.0,
-          "ecoscope:advanced": true,
-          "title": "Max Longitude",
-          "type": "number"
-        }
-      },
-      "title": "BoundingBox",
-      "type": "object"
-    },
-    "Coordinate": {
-      "properties": {
-        "y": {
-          "description": "Example -0.15293",
-          "title": "Latitude",
-          "type": "number"
-        },
-        "x": {
-          "description": "Example 37.30906",
-          "title": "Longitude",
-          "type": "number"
-        }
-      },
-      "required": [
-        "y",
-        "x"
-      ],
-      "title": "Coordinate",
-      "type": "object"
     }
   },
   "uiSchema": {
@@ -853,38 +835,18 @@
           "status",
           "include_null_geometry",
           "patrols_overlap_daterange"
-        ]
-      }
-    },
-    "Process Patrol Observations": {
-      "ui:order": [
-        "patrol_traj",
-        "customize_columns_traj",
-        "sql_query_traj",
-        "groupers",
-        "set_patrol_traj_color_column"
-      ],
-      "sql_query_traj": {
-        "ui:order": [
-          "query",
-          "columns"
-        ]
-      },
-      "filter_patrol_obs": {
-        "filter_point_coords": {
-          "items": {
-            "ui:options": {
-              "label": false
-            }
-          }
+        ],
+        "include_null_geometry": {
+          "ui:help": "Events without coordinates (point or area) will still appear in your download."
         }
       }
     },
-    "Process Patrol Events": {
-      "filter_patrol_events": {
+    "Filter Locations/Segments": {
+      "patrol_filters": {
         "ui:order": [
           "bounding_box",
-          "filter_point_coords"
+          "filter_point_coords",
+          "trajectory_segment_filter"
         ],
         "filter_point_coords": {
           "items": {
@@ -909,7 +871,7 @@
     },
     "Generate Maps": {
       "ui:order": [
-        "set_skip_map",
+        "generate_maps",
         "base_map_defs"
       ],
       "base_map_defs": {
@@ -920,17 +882,16 @@
             }
           }
         }
+      },
+      "generate_maps": {
+        "value": {
+          "ui:help": "Not recommended for large datasets to improve performance."
+        }
       }
     },
     "ui:order": [
-      "workflow_details",
-      "er_client_name",
-      "time_range",
-      "Patrol and Event Types",
-      "Process Patrol Observations",
-      "Process Patrol Events",
-      "persist_patrol_traj",
-      "persist_patrol_events",
+      "*",
+      "set_patrol_traj_color_column",
       "Generate Maps"
     ]
   },
