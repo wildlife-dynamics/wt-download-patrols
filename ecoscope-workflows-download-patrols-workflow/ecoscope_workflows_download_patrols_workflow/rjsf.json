@@ -326,7 +326,7 @@
           },
           "required": [],
           "type": "object",
-          "title": "Apply SQL Query (Trajectories)"
+          "title": "Apply SQL Query"
         }
       }
     },
@@ -915,7 +915,15 @@
       }
     },
     "ui:order": [
-      "*",
+      "workflow_details",
+      "er_client_name",
+      "time_range",
+      "Patrol and Event Types",
+      "Location and Segment Filters",
+      "Group Data",
+      "Refine Patrol Data",
+      "persist_patrol_traj",
+      "persist_patrol_events",
       "set_patrol_traj_color_column",
       "Generate Maps"
     ]

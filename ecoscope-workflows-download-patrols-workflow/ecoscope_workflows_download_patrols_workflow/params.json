@@ -264,7 +264,7 @@
       },
       "required": [],
       "type": "object",
-      "title": "Apply SQL Query (Trajectories)"
+      "title": "Apply SQL Query"
     },
     "persist_patrol_traj": {
       "additionalProperties": false,

@@ -138,11 +138,24 @@ rjsf-overrides:
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
     Generate Maps.generate_maps.value.ui:help: >-
       Not recommended for large datasets to improve performance.
-    # Float the top-level Trajectory Style (Category) node to just before Generate Maps.
-    # The `*` wildcard (rjsf 5.19.4 supports it) keeps every other chapter in spec order,
-    # so adding/removing other tasks does NOT break this override — only the two listed
-    # keys are pinned. Overrides the compiler's auto-generated top-level ui:order.
-    ui:order: ["*", set_patrol_traj_color_column, Generate Maps]
+    # Explicit top-level chapter order. The `*` wildcard proved unreliable in the
+    # rendering environment (unlisted chapters floated to the end), so every top-level
+    # property is enumerated. set_patrol_traj_color_column is DECLARED before Group Data
+    # in the DAG (its colormap consumer) but its card is floated here, just before
+    # Generate Maps. If a top-level task is added/removed, update this list too (rjsf
+    # errors if a property is missing from the order).
+    ui:order:
+      - workflow_details
+      - er_client_name
+      - time_range
+      - Patrol and Event Types
+      - Location and Segment Filters
+      - Group Data
+      - Refine Patrol Data
+      - persist_patrol_traj
+      - persist_patrol_events
+      - set_patrol_traj_color_column
+      - Generate Maps
 
 task-instance-defaults:
   skipif:
@@ -438,7 +451,7 @@ workflow:
           argnames: df
           argvalues: ${{ workflow.split_patrol_traj_groups.return }}
 
-      - name: Apply SQL Query (Trajectories)
+      - name: Apply SQL Query
         id: sql_query_traj
         task: apply_sql_query
         partial:
