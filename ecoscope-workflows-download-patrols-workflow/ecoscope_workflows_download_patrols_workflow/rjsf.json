@@ -151,9 +151,9 @@
         }
       }
     },
-    "Filter Locations/Segments": {
+    "Location and Segment Filters": {
       "type": "object",
-      "description": "Filter patrol observations and events by location (bounding box + excluded points) and filter the constructed trajectory segments. One config drives both datasets.",
+      "description": "Filter patrol trajectories and events by location  and segment length, duration, and speed. Data points outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
       "ecoscope:task_group": true,
       "properties": {
         "patrol_filters": {
@@ -219,7 +219,7 @@
           },
           "type": "object",
           "required": [],
-          "title": "Filters"
+          "title": ""
         }
       }
     },
@@ -230,7 +230,6 @@
           "title": "Category",
           "type": "string",
           "default": "patrol_subject",
-          "description": "Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.",
           "oneOf": [
             {
               "const": "patrol_type",
@@ -255,7 +254,8 @@
         "var"
       ],
       "type": "object",
-      "title": "Trajectory Style"
+      "title": "Trajectory Category",
+      "description": "Differentiate tracks by color using the selected category."
     },
     "Group Data": {
       "type": "object",
@@ -291,9 +291,28 @@
     },
     "Refine Patrol Data": {
       "type": "object",
-      "description": "Reshape and organize your patrol trajectory data before downloading. Applies to the downloaded files only \u2014 not the generated map.",
+      "description": "Reshape and organize your patrol trajectory data before downloading.",
       "ecoscope:task_group": true,
       "properties": {
+        "customize_columns_traj": {
+          "additionalProperties": false,
+          "properties": {
+            "drop_columns": {
+              "default": [],
+              "items": {
+                "type": "string",
+                "title": "Column Name"
+              },
+              "title": " ",
+              "type": "array",
+              "description": "Columns listed here will be left out of both the generated map and your download. If you're not sure, try running the workflow first to see all available columns.",
+              "ecoscope:advanced": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": "Remove Columns"
+        },
         "sql_query_traj": {
           "additionalProperties": false,
           "properties": {
@@ -301,7 +320,7 @@
               "default": "",
               "title": "SQL Query",
               "type": "string",
-              "description": "Write a SQL query to filter or transform your patrol trajectory data. Leave blank to skip this step. Use 'df' as the table name (e.g. SELECT * FROM df WHERE speed_kmhr > 5). Complex columns are sanitized to JSON strings automatically, so any column can be queried. Queries apply only to your downloaded files, not the generated map.",
+              "description": "Write a SQL query to filter or transform your data. Leave blank to skip this step. Use df as the table name (e.g., SELECT * FROM df WHERE status = 'active'). Note that queries only apply to your downloaded files and not the generated map.",
               "ecoscope:advanced": true
             }
           },
@@ -340,7 +359,7 @@
       },
       "required": [],
       "type": "object",
-      "title": "Persist Patrol Trajectories"
+      "title": "Patrol Track Download File Format"
     },
     "persist_patrol_events": {
       "additionalProperties": false,
@@ -371,7 +390,7 @@
       },
       "required": [],
       "type": "object",
-      "title": "Persist Patrol Events"
+      "title": "Event Download File Format"
     },
     "Generate Maps": {
       "type": "object",
@@ -841,7 +860,7 @@
         }
       }
     },
-    "Filter Locations/Segments": {
+    "Location and Segment Filters": {
       "patrol_filters": {
         "ui:order": [
           "bounding_box",
@@ -856,6 +875,12 @@
           }
         }
       }
+    },
+    "Refine Patrol Data": {
+      "ui:order": [
+        "customize_columns_traj",
+        "sql_query_traj"
+      ]
     },
     "persist_patrol_traj": {
       "ui:order": [

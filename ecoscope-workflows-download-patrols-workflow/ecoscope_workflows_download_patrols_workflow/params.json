@@ -203,7 +203,7 @@
         "var"
       ],
       "type": "object",
-      "title": "Trajectory Style"
+      "title": "Trajectory Category"
     },
     "groupers": {
       "additionalProperties": false,
@@ -232,6 +232,24 @@
       "type": "object",
       "required": [],
       "title": "Group Data"
+    },
+    "customize_columns_traj": {
+      "additionalProperties": false,
+      "properties": {
+        "drop_columns": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Drop Columns",
+          "type": "array",
+          "description": "List of columns to drop.",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Remove Columns"
     },
     "sql_query_traj": {
       "additionalProperties": false,
@@ -279,7 +297,7 @@
       },
       "required": [],
       "type": "object",
-      "title": "Persist Patrol Trajectories"
+      "title": "Patrol Track Download File Format"
     },
     "persist_patrol_events": {
       "additionalProperties": false,
@@ -312,7 +330,7 @@
       },
       "required": [],
       "type": "object",
-      "title": "Persist Patrol Events"
+      "title": "Event Download File Format"
     },
     "generate_maps": {
       "additionalProperties": false,
@@ -786,6 +804,7 @@
       "patrol_filters",
       "set_patrol_traj_color_column",
       "groupers",
+      "customize_columns_traj",
       "sql_query_traj",
       "persist_patrol_traj",
       "persist_patrol_events",

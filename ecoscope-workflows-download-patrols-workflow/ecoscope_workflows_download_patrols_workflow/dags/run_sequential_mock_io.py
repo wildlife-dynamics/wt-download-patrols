@@ -517,30 +517,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    customize_columns_traj = (
-        task(map_columns)
-        .validate()
-        .set_task_instance_id("customize_columns_traj")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=customize_columns_internally,
-            rename_columns={},
-            drop_columns=[],
-            retain_columns=[],
-            raise_if_not_found=False,
-            **(params.get("customize_columns_traj") or {}),
-        )
-        .call()
-    )
-
     drop_extra_prefix_events = (
         task(drop_column_prefix)
         .validate()
@@ -636,7 +612,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=customize_columns_traj,
+            df=customize_columns_internally,
             time_col="segment_start",
             groupers=groupers,
             cast_to_datetime=True,
@@ -841,6 +817,28 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    customize_columns_traj = (
+        task(map_columns)
+        .validate()
+        .set_task_instance_id("customize_columns_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            rename_columns={},
+            retain_columns=[],
+            raise_if_not_found=False,
+            **(params.get("customize_columns_traj") or {}),
+        )
+        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+    )
+
     sql_query_traj = (
         task(apply_sql_query)
         .validate()
@@ -855,7 +853,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(sanitize=True, columns=None, **(params.get("sql_query_traj") or {}))
-        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+        .mapvalues(argnames=["df"], argvalues=customize_columns_traj)
     )
 
     persist_patrol_traj = (
@@ -931,7 +929,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(skip=generate_maps, **(params.get("skip_traj_map") or {}))
-        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+        .mapvalues(argnames=["df"], argvalues=customize_columns_traj)
     )
 
     skip_event_map = (
