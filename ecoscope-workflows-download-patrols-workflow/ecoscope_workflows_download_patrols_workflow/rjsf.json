@@ -82,7 +82,7 @@
               },
               "title": "Patrol Types",
               "type": "array",
-              "description": "Specify the patrol type(s) to download. Enter the \"Patrol Types\" value for each patrol type you want to include in the output \u2014 one per field (e.g. \"ecoscope_patrol\"). If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types. Leave this section empty to include all patrol types",
+              "description": "Specify the patrol type(s) to download (optional). Leave this section empty to download all patrol types.",
               "ecoscope:transform": [
                 {
                   "transformer": "EarthRangerEnumResolver",
@@ -99,7 +99,7 @@
               },
               "title": "Event Types",
               "type": "array",
-              "description": "Specify the event type(s) to include (optional). Enter the \"Event Types\" value for each event type you want to include in the output \u2014 one per field (e.g. \"wildlife_sighting_rep\"). If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types. Leave this section empty to include all event types",
+              "description": "Specify the event type(s) to download (optional). Leave this section empty to download all event types.",
               "ecoscope:transform": [
                 {
                   "transformer": "EarthRangerEnumResolver",
@@ -151,9 +151,9 @@
         }
       }
     },
-    "Location and Segment Filters": {
+    "Filter Data": {
       "type": "object",
-      "description": "Filter patrol trajectories and events by location  and segment length, duration, and speed. Data points outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.",
+      "description": "Filter patrol trajectories and events by location (bounding box + excluded points) and by trajectory segment length, duration, and speed. Data outside these bounds is removed, reducing noise and focusing on meaningful movement patterns.",
       "ecoscope:task_group": true,
       "properties": {
         "patrol_filters": {
@@ -855,12 +855,18 @@
           "include_null_geometry",
           "patrols_overlap_daterange"
         ],
+        "patrol_types": {
+          "ui:help": "If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types."
+        },
+        "event_types": {
+          "ui:help": "If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types."
+        },
         "include_null_geometry": {
           "ui:help": "Events without coordinates (point or area) will still appear in your download."
         }
       }
     },
-    "Location and Segment Filters": {
+    "Filter Data": {
       "patrol_filters": {
         "ui:order": [
           "bounding_box",
@@ -919,7 +925,7 @@
       "er_client_name",
       "time_range",
       "Patrol and Event Types",
-      "Location and Segment Filters",
+      "Filter Data",
       "Group Data",
       "Refine Patrol Data",
       "persist_patrol_traj",

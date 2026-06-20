@@ -26,9 +26,9 @@ requirements:
 rjsf-overrides:
   properties:
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.patrol_types.description: >-
-      Specify the patrol type(s) to download. Enter the "Patrol Types" value for each patrol type you want to include in the output — one per field (e.g. "ecoscope_patrol"). If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types. Leave this section empty to include all patrol types
+      Specify the patrol type(s) to download (optional). Leave this section empty to download all patrol types.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.description: >-
-      Specify the event type(s) to include (optional). Enter the "Event Types" value for each event type you want to include in the output — one per field (e.g. "wildlife_sighting_rep"). If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types. Leave this section empty to include all event types
+      Specify the event type(s) to download (optional). Leave this section empty to download all event types.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.patrol_types.ecoscope:transform:
       - transformer: EarthRangerEnumResolver
         transformer_kws:
@@ -45,21 +45,21 @@ rjsf-overrides:
     # FieldTemplate); schema.description would render ABOVE it in CheckboxWidget.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.include_null_geometry.title: "Include events without a location"
 
-    # --- Location and Segment Filters: combined filter config (NEW: one config drives both datasets) ---
+    # --- Filter Data: combined filter config (one config drives both datasets) ---
     # NOTE: override paths must match the group TITLE exactly; the compiler silently
     # ignores mismatches (a stale title creates a phantom top-level property instead).
     # Blank the inner task header ("Filters"); the group title is enough.
-    Location and Segment Filters.properties.patrol_filters.title: ""
-    Location and Segment Filters.properties.patrol_filters.properties.bounding_box.title: "Bounding Box"
-    Location and Segment Filters.properties.patrol_filters.properties.bounding_box.description: >-
+    Filter Data.properties.patrol_filters.title: ""
+    Filter Data.properties.patrol_filters.properties.bounding_box.title: "Bounding Box"
+    Filter Data.properties.patrol_filters.properties.bounding_box.description: >-
       Only include patrol observations and events whose coordinates fall inside this
       bounding box. Applies to BOTH the patrol trajectories and the patrol events.
-    Location and Segment Filters.properties.patrol_filters.properties.filter_point_coords.title: "Filter Exact Point Coordinates"
-    Location and Segment Filters.properties.patrol_filters.properties.filter_point_coords.description: >-
+    Filter Data.properties.patrol_filters.properties.filter_point_coords.title: "Filter Exact Point Coordinates"
+    Filter Data.properties.patrol_filters.properties.filter_point_coords.description: >-
       Exclude observations and events recorded at these exact coordinates (e.g. known
       bad GPS fixes). Applies to BOTH the patrol trajectories and the patrol events.
-    Location and Segment Filters.properties.patrol_filters.properties.trajectory_segment_filter.title: "Trajectory Filter"
-    Location and Segment Filters.properties.patrol_filters.properties.trajectory_segment_filter.description: >-
+    Filter Data.properties.patrol_filters.properties.trajectory_segment_filter.title: "Trajectory Filter"
+    Filter Data.properties.patrol_filters.properties.trajectory_segment_filter.description: >-
       Drop trajectory segments outside these length / time / speed bounds (e.g. to remove
       implausible jumps). Applies to the patrol trajectories only.
 
@@ -130,11 +130,16 @@ rjsf-overrides:
               title: "Patrol Subject"
 
   uiSchema:
+    # Desktop hint as help text (renders below the field), separate from the description.
+    Patrol and Event Types.er_patrol_and_events_params.patrol_types.ui:help: >-
+      If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types.
+    Patrol and Event Types.er_patrol_and_events_params.event_types.ui:help: >-
+      If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types.
     # Checkbox helper text → ui:help renders BELOW the checkbox (not above).
     Patrol and Event Types.er_patrol_and_events_params.include_null_geometry.ui:help: >-
       Events without coordinates (point or area) will still appear in your download.
-    # coordinate-filter array now lives on the combined filter config task
-    Location and Segment Filters.patrol_filters.filter_point_coords.items.ui:options.label: false
+    # coordinate-filter array lives on the combined Filter Data config task
+    Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
     Generate Maps.generate_maps.value.ui:help: >-
       Not recommended for large datasets to improve performance.
@@ -149,7 +154,7 @@ rjsf-overrides:
       - er_client_name
       - time_range
       - Patrol and Event Types
-      - Location and Segment Filters
+      - Filter Data
       - Group Data
       - Refine Patrol Data
       - persist_patrol_traj
@@ -234,11 +239,13 @@ workflow:
       timezone: ${{ workflow.get_timezone.return }}
       columns: ["time"]
 
-  # === FILTER LOCATIONS / SEGMENTS (combined filter config + splitters) ===
-  - title: Location and Segment Filters
+  # === FILTER DATA (combined filter config + splitters) ===
+  - title: Filter Data
     type: task-group
     description: >-
-      Filter patrol trajectories and events by location  and segment length, duration, and speed. Data points outside these bounds are removed, reducing noise and to focus on meaningful movement patterns.
+      Filter patrol trajectories and events by location (bounding box + excluded points)
+      and by trajectory segment length, duration, and speed. Data outside these bounds is
+      removed, reducing noise and focusing on meaningful movement patterns.
     tasks:
       - name: Filters
         id: patrol_filters
