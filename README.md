@@ -6,9 +6,10 @@ This workflow helps you to download, process, and visualize patrol data from Ear
 
 **What this workflow does:**
 - Downloads patrol observations and associated events from EarthRanger
-- Processes patrol trajectories and events with filtering and trajectory segment analysis
+- Builds patrol trajectories and filters both trajectories and events by a single shared set of location and segment filters
+- Lets you refine the downloaded trajectory data with a custom SQL query
 - Exports data in multiple formats (CSV, Parquet)
-- Creates interactive maps showing patrol trajectories and event locations
+- Creates an interactive map showing patrol trajectories and event locations
 
 **Who should use this:**
 - Conservation managers monitoring patrol activities and field operations
@@ -25,12 +26,12 @@ Before using this workflow, you need:
 2. **EarthRanger Data Source** configured in Ecoscope Desktop
    - You must have already set up a connection to your EarthRanger server
    - Your data source should be configured with proper authentication credentials
-   - You'll need to know the name of your configured data source (e.g., "mep_dev")
+   - You'll need to know the name of your configured data source (e.g., `"mep_dev"`)
 
 3. **Patrol Data** set up in EarthRanger
    - You need to have patrols configured in your EarthRanger system
    - You should know the patrol types you want to analyze
-   - You can find them at https://<your-site>.pamdas.org/admin/activity/patrol/
+   - You can find them in your EarthRanger Admin site under Activity → Patrol Types
 
 ## Installation
 
@@ -42,6 +43,11 @@ Before using this workflow, you need:
 
 ## Configuration Guide
 
+The configuration form is organized into chapters, shown in this order: **Workflow Details**,
+**Data Source**, **Time Range**, **Patrol and Event Types**, **Filter Data**, **Group Data**,
+**Refine Patrol Data**, **Patrol Track Download File Format**, **Event Download File Format**,
+**Trajectory Category**, and **Generate Maps**.
+
 ### Basic Configuration
 
 #### 1. Workflow Details
@@ -52,7 +58,13 @@ Add information that will help to differentiate this workflow from another.
 - **Workflow Description** (optional): Add additional context
   - Example: `"Process and visualize patrol observations and events."`
 
-#### 2. Time Range
+#### 2. Data Source
+Select one of your configured data sources.
+
+- **Data Source** (required): Choose your EarthRanger connection
+  - Example: `"mep_dev"`
+
+#### 3. Time Range
 Choose the period of time to analyze.
 
 - **Since** (required): The start time
@@ -63,121 +75,108 @@ Choose the period of time to analyze.
   - Example: `Africa/Nairobi (UTC+03:00)`
   - Note: If not specified, times will be displayed in UTC
 
-#### 3. Data Source
-Select one of your configured data sources.
-
-- **Data Source** (required): Choose your EarthRanger connection
-  - Example: `"mep_dev"`
-
 #### 4. Patrol and Event Types
-Specify which patrols and events to analyze.
+Specify which patrols and events to download.
 
-- **Patrol Types** (optional): Specify the patrol type(s) to analyze (optional). Leave empty to analyze all patrol types.
+- **Patrol Types** (optional): Specify the patrol type(s) to download. Leave this section empty to download all patrol types.
   - Example: `["ecoscope_patrol"]`
-  - Note: Leave empty (`[]`) to include all patrol types
-- **Event Types** (optional): Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types.
-  - Example: `[]` (for all event types)
-- **Include Events Without a Geometry** (optional): Include events that don't have a point or polygon location
+  - Help: If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types
+- **Event Types** (optional): Specify the event type(s) to download. Leave this section empty to download all event types.
+  - Example: `["arrest_rep", "snare_rep", "poacher_camp_rep"]`
+  - Help: If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types
+- **Include events without a location** (optional): Events without coordinates (point or area) will still appear in your download
   - Default: `true`
 
-#### 5. Process Patrol Observations
+#### 5. Filter Data
+One filter section that drives **both** the patrol trajectories and the patrol events. All
+fields are optional and live under the advanced settings.
+
+- **Bounding Box**: Only include patrol observations and events whose coordinates fall inside this bounding box. Applies to BOTH the patrol trajectories and the patrol events.
+  - Default: Min Lon: `-180.0`, Max Lon: `180.0`, Min Lat: `-90.0`, Max Lat: `90.0`
+- **Filter Exact Point Coordinates**: Exclude observations and events recorded at these exact coordinates (e.g. known bad GPS fixes). Applies to BOTH the patrol trajectories and the patrol events.
+  - Example: `[{x: 180.0, y: 90.0}, {x: 0.0, y: 0.0}, {x: 1.0, y: 1.0}]`
+- **Trajectory Filter**: Drop trajectory segments outside these length / time / speed bounds (e.g. to remove implausible jumps). Applies to the patrol trajectories only. See [Trajectory Filter](#trajectory-filter) under Advanced Configuration for the individual bounds.
+
+#### 6. Group Data
+Configure how patrols and events are grouped and split into per-group datasets for export and mapping.
 
 - **Group Data** (optional): Choose grouping options
   - Leave empty to show all data in a single view
   - Temporal options: `Year`, `Month`, `Year and Month`, `Day of the year`, `Day of the month`, `Day of the week`, `Hour`, `Date`
   - Category options: `Patrol Serial Number`, `Patrol Type`, `Patrol Subject`
-- **Style Trajectory By Category** (required): Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.
-  - Options: `Patrol Type`, `Patrol Status`, `Patrol Subject`, `Patrol Serial Number`
-  - Default: `Patrol Subject`
 
-#### 6. Persist Patrol Trajectories
+#### 7. Refine Patrol Data
+Reshape and organize your patrol trajectory data before downloading.
+
+- **Remove Columns** (optional): Columns listed here will be left out of both the generated map and your download. Leave empty to keep all columns.
+  - Note: If you're not sure which columns exist, try running the workflow first to see all available columns.
+- **SQL Query** (optional): Write a SQL query to filter or transform your patrol trajectory data. Leave blank to skip this step.
+  - Use `df` as the table name
+  - Example: `SELECT * FROM df WHERE speed_kmhr > 5`
+  - Note: Complex columns are sanitized to JSON strings automatically, so any column can be queried. The query applies only to your downloaded files, **not** the generated map.
+
+#### 8. Patrol Track Download File Format
 Choose output formats for patrol trajectory data.
 
 - **Filetypes** (required): Select one or more output formats
   - Options: `csv`, `parquet`
   - Default: `["parquet"]`
 
-#### 7. Persist Patrol Events
+#### 9. Event Download File Format
 Choose output formats for patrol event data.
 
 - **Filetypes** (required): Select one or more output formats
-  - Options: `csv`, ``parquet`
+  - Options: `csv`, `parquet`
   - Default: `["parquet"]`
 
-#### 8. Skip Map Generation
-Control whether maps are generated.
+#### 10. Trajectory Category
+Differentiate tracks by color using the selected category.
 
-- **Skip** (required): Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.
-  - Default: `false`
+- **Category** (required): Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.
+  - Options: `Patrol Type`, `Patrol Status`, `Patrol Subject`, `Patrol Serial Number`
+  - Default: `Patrol Subject`
+
+#### 11. Generate Maps
+Control whether maps are generated in the dashboard.
+
+- **Generate maps in dashboard** (optional): When checked, the workflow renders the patrol trajectories and events map in the dashboard.
+  - Default: checked (`true`)
+  - Help: Not recommended for large datasets to improve performance — uncheck to skip map generation.
 
 ### Advanced Configuration
 
 These optional settings provide additional control over your workflow:
 
 #### Patrol and Event Types
-- **Patrol Status** : Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed
+- **Patrol Status**: Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed.
   - Example: `["done"]`
   - Options: `active`, `overdue`, `done`, `cancelled`
   - Default: `["done"]`
 
-
-#### Trajectory Segment Filter
-Filter track data by setting limits on track segment length, duration, and speed.
+#### Trajectory Filter
+Filter track data by setting limits on track segment length, duration, and speed. These bounds
+live on the **Filter Data** card.
 
 - **Minimum Segment Length (Meters)**:
-  - Default: `0.001`
   - Example: `0.001`
 - **Maximum Segment Length (Meters)**:
-  - Default: `100000`
   - Example: `10000.0`
-- **Minimum Segment Duration (Seconds)**: 
-  - Default: `1`
+- **Minimum Segment Duration (Seconds)**:
   - Example: `1.0`
 - **Maximum Segment Duration (Seconds)**:
-  - Default: `172800` (2 days)
   - Example: `3600.0` (1 hour)
 - **Minimum Segment Speed (Kilometers per Hour)**:
-  - Default: `0.01`
   - Example: `0.01`
 - **Maximum Segment Speed (Kilometers per Hour)**:
-  - Default: `500`
   - Example: `120.0`
-
-#### Process Columns
-Customize the columns in your trajectory output.
-
-- **Drop Columns**: List of columns to drop from the output
-  - Default includes common internal/system columns: `location`, `end_time`, `message`, `provenance`, `priority`, `priority_label`, `attributes`, `comment`, `patrol_segments`, `updated_at`, `state`, `is_contained_in`, `sort_at`, `icon_id`, `url`, `image_url`, `geojson`, `related_subjects`, `patrols`, `reported_by`
-  - Modify the list based on your requirements - add columns you want to hide or remove columns you want to keep
-
-#### Apply SQL Query
-Apply custom SQL queries for advanced filtering.
-
-- **Query**: SQL query string to apply to the DataFrame. Use 'df' as the table name in the query.
-  - Default: `""`
-  - Example: `"SELECT * FROM df WHERE speed_kmhr > 5"`
-- **Columns**: Optional list of column names to include in the SQL query context
-  - Default: `null`
-  - Note: Use this to exclude columns with unsupported data types (list, dict)
-
-#### Apply Coordinate Filter to Patrol Events
-Filter patrol events by location.
-
-- **Bounding Box**: Filter coordinates to be inside these bounding coordinates
-  - Default: Min Lat: `-90.0`, Max Lat: `90.0`, Min Lon: `-180.0`, Max Lon: `180.0`
-  - Example: Set custom boundaries to limit your area of interest
-- **Filter Exact Point Coordinates**: Exclude events recorded at specific coordinates
-  - Default: `[]`
-  - Example: `[{"Latitude ": 0.0, "Longitude": 0.0}, {"Latitude": 1.0, "Longitude": 1.0}]`
-  - Note: Useful for filtering out test points or known invalid locations
 
 #### Filename Prefixes
 Customize the names of your output files.
 
-- **Persist Patrol Trajectories - Filename Prefix**: Custom prefix for trajectory files
+- **Patrol Track Download File Format - Filename Prefix**: Custom prefix for trajectory files
   - Default: `"patrol_trajectories"`
   - Example: `"my_patrols"` will create files like `my_patrols_abc123.csv`
-- **Persist Patrol Events - Filename Prefix**: Custom prefix for event files
+- **Event Download File Format - Filename Prefix**: Custom prefix for event files
   - Default: `"patrol_events"`
   - Example: `"patrol_incidents"` will create files like `patrol_incidents_xyz789.csv`
 
@@ -224,11 +223,11 @@ Your patrol data will be saved in the format(s) you selected:
 - **Best for**:
   - CSV: Quick data review and analysis
   - Parquet: Large datasets, programmatic analysis
+- **Reflects**: the **SQL query** from Refine Patrol Data (if you set one) — this fork is downloads-only
 - **Contents**: Trajectory segments with movement information
   - `patrol_serial_number`: Unique identifier for each patrol
   - `patrol_type`: Type of patrol conducted
   - `patrol_subject`: Subject/person conducting the patrol
-  - `patrol_status`: Status of the patrol (active, done, cancelled, overdue)
   - `segment_start`: Start time of the trajectory segment
   - `timespan_seconds`: Duration of the segment in seconds
   - `speed_kmhr`: Speed during the segment in km/h
@@ -237,22 +236,21 @@ Your patrol data will be saved in the format(s) you selected:
 
 #### Patrol Event Data
 
-- **File formats**: CSV, Parquet(based on your selection)
+- **File formats**: CSV, Parquet (based on your selection)
 - **Opens in**: Microsoft Excel, Google Sheets (CSV), Python/R (Parquet)
 - **Best for**:
   - CSV: Quick data review and analysis
   - Parquet: Large datasets, programmatic analysis
-- **Contents**: Events recorded during patrols with normalized event details (coded values are automatically mapped to human-readable display titles)
-  - `id`: Unique identifier for the event
+- **Contents**: Events recorded during patrols
   - `patrol_serial_number`: Unique identifier for the associated patrol
   - `event_type`: Type of event recorded
-  - `event_time`: Time when the event occurred
+  - `time`: Time when the event occurred
   - `geometry`: Point geometry of the event location
-  - Additional event details are automatically expanded into separate columns
 
 ### Visual Outputs (Dashboard)
 
-The workflow creates an interactive dashboard with map visualizations:
+The workflow creates an interactive dashboard with a map visualization (unless you unchecked
+"Generate maps in dashboard"):
 
 #### Patrol Trajectories and Events Map
 
@@ -260,15 +258,16 @@ The workflow creates an interactive dashboard with map visualizations:
 - **Features**:
   - Patrol trajectories displayed as colored polylines
   - Events displayed as colored points
-  - Color coding based on your selected category (patrol subject, type, status, or serial number)
+  - Color coding of trajectories based on your selected **Trajectory Category** (patrol subject, type, status, or serial number)
   - Interactive hover: Shows patrol details when you mouse over trajectories or events
   - Legend: Shows category colors and labels
   - Zoom and pan: Navigate the map to explore different areas
   - Multiple base layers: Switch between terrain, satellite, and other views
+- **Note**: The map reflects your **Remove Columns** choices but **not** the SQL query (which applies to downloads only).
 
 ### Grouped Outputs
 
-If you selected grouping options, your data and visualizations will be organized into separate views:
+If you selected grouping options in **Group Data**, your data and visualizations will be organized into separate views:
 
 - **Temporal grouping**: Data split by time periods (e.g., separate views for each month)
 - **Category grouping**: Data split by categories (e.g., separate views for each patrol type or subject)
@@ -290,11 +289,11 @@ Here are some typical scenarios and how to configure the workflow for each:
   - Timezone: `Africa/Nairobi (UTC+03:00)`
 - **Patrol Types**: `["ecoscope_patrol"]`
 - **Patrol Status**: `["done"]`
-- **Group Data**: `["%B"]` (group by month)
-- **Style Trajectory By Category**: `patrol_subject`
-- **Persist Patrol Trajectories**: `["Parquet", "csv"]`
-- **Persist Patrol Events**: `["Parquet", "csv"]`
-- **Skip Map Generation**: `false`
+- **Group Data**: `Month` (`"%B"`)
+- **Trajectory Category**: `Patrol Subject`
+- **Patrol Track Download File Format**: `["parquet", "csv"]`
+- **Event Download File Format**: `["parquet", "csv"]`
+- **Generate maps in dashboard**: checked
 
 **Result**:
 - Separate CSV and Parquet files for each month
@@ -309,66 +308,63 @@ Here are some typical scenarios and how to configure the workflow for each:
 
 **Configuration**:
 - **Time Range**:
-  - Since: `2024-01-01T00:00:00`
-  - Until: `2024-12-31T23:59:59`
-  - Timezone: `UTC (UTC+00:00)`
+  - Since: `2026-01-01T00:00:00`
+  - Until: `2026-01-07T23:59:59`
+  - Timezone: `Africa/Nairobi (UTC+03:00)`
 - **Patrol Types**: `[]` (all types)
 - **Patrol Status**: `["done"]`
-- **Group Data**: `["patrol_type"]` (group by patrol type)
-- **Style Trajectory By Category**: `patrol_type`
-- **Persist Patrol Trajectories**: `["csv"]`
-- **Persist Patrol Events**: `["csv"]`
+- **Group Data**: `Patrol Type`
+- **Trajectory Category**: `Patrol Type`
+- **Patrol Track Download File Format**: `["parquet", "csv"]`
+- **Event Download File Format**: `["parquet"]`
 
 **Result**:
-- Separate CSV files for each patrol type
+- Separate files for each patrol type
 - Separate map views for each patrol type
 - Easy comparison of coverage between different patrol types
 
 ---
 
-### Example 3: Fast Movement Analysis
+### Example 3: Fast Movement Analysis (downloads-only SQL)
 
-**Goal**: Identify fast-moving patrol segments for vehicle patrols
+**Goal**: Keep only fast-moving trajectory segments in the downloaded files
 
 **Configuration**:
 - **Time Range**:
-  - Since: `2024-06-01T00:00:00`
-  - Until: `2024-06-30T23:59:59`
+  - Since: `2015-01-10T00:00:00`
+  - Until: `2015-02-28T23:59:59`
   - Timezone: `Africa/Nairobi (UTC+03:00)`
-- **Patrol Types**: `["vehicle_patrol"]`
-- **Trajectory Segment Filter**:
-  - Minimum Speed: `5.0` km/h
-  - Maximum Speed: `60.0` km/h
-- **Apply SQL Query**: `"SELECT * FROM df WHERE speed_kmhr > 10"`
-- **Style Trajectory By Category**: `patrol_subject`
-- **Persist Patrol Trajectories**: `["csv", "parquet"]`
+- **Patrol Types**: `["ecoscope_patrol"]`
+- **Refine Patrol Data → SQL Query**: `SELECT * FROM df WHERE speed_kmhr > 5.0`
+- **Trajectory Category**: `Patrol Subject`
+- **Patrol Track Download File Format**: `["csv"]`
 
 **Result**:
-- Filtered trajectory data showing only fast-moving segments
-- Map visualization of vehicle patrol routes
+- Downloaded trajectory files contain only segments faster than 5 km/h
+- The map still shows the full (unfiltered) trajectories — the SQL query applies to downloads only
+- No `columns` whitelist is needed; complex columns are sanitized automatically
 
 ---
 
-### Example 4: Event-Focused Analysis
+### Example 4: Event-Focused Analysis (maps off)
 
-**Goal**: Export patrol events without generating maps for a large dataset
+**Goal**: Export patrol data without generating maps for a large dataset
 
 **Configuration**:
 - **Time Range**:
-  - Since: `2023-01-01T00:00:00`
-  - Until: `2024-12-31T23:59:59`
-  - Timezone: `UTC (UTC+00:00)`
+  - Since: `2015-01-01T00:00:00`
+  - Until: `2015-12-31T23:59:59`
+  - Timezone: `Africa/Nairobi (UTC+03:00)`
 - **Patrol Types**: `[]` (all types)
 - **Event Types**: `[]` (all event types)
 - **Patrol Status**: `["done"]`
-- **Skip Map Generation**: `true`
-- **Persist Patrol Trajectories**: `["csv"]`
-- **Persist Patrol Events**: `["Parquet"]`
+- **Generate maps in dashboard**: unchecked
+- **Patrol Track Download File Format**: `["parquet", "csv"]`
+- **Event Download File Format**: `["parquet", "csv"]`
 
 **Result**:
-- Fast processing for large datasets by skipping map generation
-- Lightweight CSV file for trajectory data
-- Efficient Parquet file for large event datasets
+- Faster processing for large datasets by skipping map generation
+- Trajectory and event files in both CSV and Parquet
 - No map visualizations (to improve performance)
 
 ## Troubleshooting
@@ -391,11 +387,9 @@ Here are some typical scenarios and how to configure the workflow for each:
 
 **Solutions**:
 - Verify your time range covers a period with patrol data in EarthRanger
-- Check that the patrol types you specified exist in your EarthRanger system
-  - Visit https://<your-site>.pamdas.org/admin/activity/patrol/ to see available patrol types
-- Ensure the patrol status filter includes patrols in your system (try using all statuses: `["active", "overdue", "done", "cancelled"]`)
-- Verify that the patrols in your time range have observations and events recorded
-- Check if your coordinate filters are too restrictive and excluding all data
+- Check that the patrol types you specified exist in your EarthRanger system (Admin → Activity → Patrol Types)
+- Ensure the patrol status filter includes patrols in your system (try all statuses: `["active", "overdue", "done", "cancelled"]`)
+- Check if your **Filter Data** settings (bounding box / excluded points) are too restrictive and excluding all data
 
 #### Workflow runs very slowly
 
@@ -403,9 +397,9 @@ Here are some typical scenarios and how to configure the workflow for each:
 
 **Solutions**:
 - Reduce your time range to analyze smaller periods
-- Enable "Skip Map Generation" for large datasets to improve performance
+- Uncheck "Generate maps in dashboard" for large datasets to improve performance
 - Use more restrictive filters (patrol types, status) to reduce data volume
-- Consider grouping by shorter time periods (e.g., by week instead of by year)
+- Consider grouping by shorter time periods (e.g., by month instead of by year)
 - Note: The first run may be slower as EarthRanger "warms up" the data query. Subsequent runs with similar parameters may be faster.
 
 #### Authentication errors
@@ -423,22 +417,20 @@ Here are some typical scenarios and how to configure the workflow for each:
 **Problem**: Maps are generated but appear empty or incomplete
 
 **Solutions**:
+- Check that "Generate maps in dashboard" is checked
 - Check that your patrol data includes valid GPS coordinates
-- Verify that the geometry data is not null for your patrols
-- Ensure "Include Events Without a Geometry" is set appropriately for your data
-- Try adjusting the coordinate filters to ensure data isn't being excluded
-- Check that your trajectory segment filters aren't too restrictive
+- Try adjusting the **Filter Data** bounding box / excluded points to ensure data isn't being excluded
+- Check that your trajectory filter bounds aren't too restrictive
 
-#### Missing trajectory segments
+#### SQL query returns no rows / errors
 
-**Problem**: Some patrol tracks appear incomplete or have gaps
+**Problem**: The downloaded trajectory files are empty or the SQL step fails
 
 **Solutions**:
-- Review your trajectory segment filter settings
-- Increase the maximum time between segments (max_time_secs) if patrols have long stationary periods
-- Adjust minimum and maximum speed filters to match your patrol activities
-- Check the source patrol data in EarthRanger for GPS data gaps
-- Verify that observations are being recorded during patrols
+- Use `df` as the table name (e.g. `SELECT * FROM df WHERE speed_kmhr > 5`)
+- Remember the query runs per group, after data is split — overly strict conditions can empty a group
+- You do **not** need a `columns` whitelist; complex columns are sanitized automatically
+- Leave the SQL Query blank to skip this step entirely
 
 #### File export errors
 
@@ -448,4 +440,3 @@ Here are some typical scenarios and how to configure the workflow for each:
 - Ensure you have write permissions to the output directory
 - Check that you have sufficient disk space for the output files
 - Try exporting to a single format first (e.g., just CSV) to isolate the issue
-- Verify that the data doesn't contain characters that cause file naming conflicts
