@@ -7,9 +7,6 @@ requirements:
   - name: ecoscope-workflows-ext-custom
     version: "0.1.0rc10"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
-  # ecoscope-platform already declares this exact pydeck dependency. it is
-  # re-stated here as a workaround for a known issue. for further detail, see:
-  # https://github.com/wildlife-dynamics/wt/issues/167#issuecomment-4451993697
   - name: pydeck
     version: 0.9.2
     channel: conda-forge
@@ -31,15 +28,10 @@ rjsf-overrides:
           type: event_type
           depends_on: properties.er_client_name.properties.data_source.properties.name
 
-    # --- Patrol and Event Types: event geometry toggle (relabel only) ---
-    # Checkbox helper text lives in uiSchema ui:help (renders BELOW the checkbox via
-    # FieldTemplate); schema.description would render ABOVE it in CheckboxWidget.
+    # --- Patrol and Event Types: event geometry toggle ---
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.include_null_geometry.title: "Include events without a location"
 
-    # --- Filter Data: combined filter config (one config drives both datasets) ---
-    # NOTE: override paths must match the group TITLE exactly; the compiler silently
-    # ignores mismatches (a stale title creates a phantom top-level property instead).
-    # Blank the inner task header ("Filters"); the group title is enough.
+    # --- Filter Data: combined filter config ---
     Filter Data.properties.patrol_filters.title: ""
     Filter Data.properties.patrol_filters.properties.bounding_box.title: "Bounding Box"
     Filter Data.properties.patrol_filters.properties.bounding_box.description: >-
@@ -54,7 +46,7 @@ rjsf-overrides:
       Drop trajectory segments outside these length / time / speed bounds (e.g. to remove
       implausible jumps). Applies to the patrol trajectories only.
 
-    # --- Trajectory Style: color column var (TOP-LEVEL node; keyed by task id, no group prefix) ---
+    # --- Trajectory Style: color column var ---
     set_patrol_traj_color_column.description: "Differentiate tracks by color using the selected category."
     set_patrol_traj_color_column.properties.var.title: "Category"
     set_patrol_traj_color_column.properties.var.default: "patrol_subject"
@@ -65,38 +57,32 @@ rjsf-overrides:
       {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
     ]
 
-    # --- Group Data: grouper override (MIGRATED from "Process Patrol Observations") ---
+    # --- Group Data: grouper override ---
     Group Data.properties.groupers.title: ""
     Group Data.properties.groupers.properties.groupers.description: ""
     Group Data.properties.groupers.properties.groupers.items.anyOf:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
 
-    # --- Refine Patrol Data: Remove Columns (affects maps + downloads) ---
-    # Blank the inner field title (the "Remove Columns" task header already names it);
-    # a single space, NOT "" (an empty title makes rjsf fall back to the raw property
-    # name and, for arrays, also drops the description).
+    # --- Refine Patrol Data: Remove Columns ---
     Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.title: " "
     Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.items.title: "Column Name"
     Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.description: >-
       Columns listed here will be left out of both the generated map and your download.
       If you're not sure, try running the workflow first to see all available columns.
-    # --- Refine Patrol Data: trajectory SQL query (post-split, downloads-only) ---
+    # --- Refine Patrol Data: trajectory SQL query ---
     Refine Patrol Data.properties.sql_query_traj.properties.query.title: "SQL Query"
     Refine Patrol Data.properties.sql_query_traj.properties.query.description: >-
       Write a SQL query to filter or transform your data. Leave blank to skip this step. Use df as the table name (e.g., SELECT * FROM df WHERE status = 'active'). Note that queries only apply to your downloaded files and not the generated map.
 
-    # --- Generate Maps: positive maps toggle (invert_bool ahead of maybe_skip_df) ---
-    # Drop the redundant task header; the checkbox label (value.title) is enough. Blank
-    # the native invert_bool description so it does NOT render above the checkbox; helper
-    # text is supplied below via uiSchema ui:help.
+    # --- Generate Maps: positive maps toggle ---
     Generate Maps.properties.generate_maps.title: ""
     Generate Maps.properties.generate_maps.properties.value.title: "Generate maps in dashboard"
     Generate Maps.properties.generate_maps.properties.value.default: true
     Generate Maps.properties.generate_maps.properties.value.description: ""
     Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
 
-    # --- Persist (unchanged) ---
+    # --- Persist ---
     persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
     persist_patrol_traj.properties.filetypes.default: ["parquet"]
     persist_patrol_traj.properties.filetypes.items.enum: ["csv", "parquet"]
@@ -121,25 +107,16 @@ rjsf-overrides:
               title: "Patrol Subject"
 
   uiSchema:
-    # Desktop hint as help text (renders below the field), separate from the description.
     Patrol and Event Types.er_patrol_and_events_params.patrol_types.ui:help: >-
       If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types.
     Patrol and Event Types.er_patrol_and_events_params.event_types.ui:help: >-
       If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types.
-    # Checkbox helper text → ui:help renders BELOW the checkbox (not above).
     Patrol and Event Types.er_patrol_and_events_params.include_null_geometry.ui:help: >-
       Events without coordinates (point or area) will still appear in your download.
-    # coordinate-filter array lives on the combined Filter Data config task
     Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
     Generate Maps.generate_maps.value.ui:help: >-
       Not recommended for large datasets to improve performance.
-    # Explicit top-level chapter order. The `*` wildcard proved unreliable in the
-    # rendering environment (unlisted chapters floated to the end), so every top-level
-    # property is enumerated. set_patrol_traj_color_column is DECLARED before Group Data
-    # in the DAG (its colormap consumer) but its card is floated here, just before
-    # Generate Maps. If a top-level task is added/removed, update this list too (rjsf
-    # errors if a property is missing from the order).
     ui:order:
       - workflow_details
       - er_client_name
@@ -230,7 +207,7 @@ workflow:
       timezone: ${{ workflow.get_timezone.return }}
       columns: ["time"]
 
-  # === FILTER DATA (combined filter config + splitters) ===
+  # === FILTER DATA ===
   - title: Filter Data
     type: task-group
     description: >-
@@ -242,10 +219,7 @@ workflow:
         id: patrol_filters
         task: set_traj_filters
 
-  # combined-filter splitters — all inputs via `partial`, so they render no form fields.
-  # Each returns ONE value (the compiler cannot subscript `.return[i]` in `${{ }}`).
-  # Node ids differ from the task names (the compiler forbids an id that matches a
-  # registered task name).
+  # --- Combined-filter splitters ---
   - name: Split Bounding Box
     id: bounding_box
     task: get_bounding_box
@@ -264,7 +238,7 @@ workflow:
     partial:
       filters: ${{ workflow.patrol_filters.return }}
 
-  # --- trajectory branch (pre-split processing; param-less plain nodes, render nothing) ---
+  # --- Trajectory branch ---
   - name: Remove Column Prefix Extra (Observations)
     id: drop_extra_prefix_obs
     task: drop_column_prefix
@@ -309,7 +283,7 @@ workflow:
       retain_columns: []
       raise_if_not_found: false
 
-  # --- events branch (pre-split processing; param-less plain nodes, render nothing) ---
+  # --- Events branch ---
   - name: Remove Column Prefix Extra (Events)
     id: drop_extra_prefix_events
     task: drop_column_prefix
@@ -329,15 +303,12 @@ workflow:
       roi_name: null
       reset_index: true
 
-  # === TRAJECTORY STYLE (Category color column) ===
-  # Top-level node (NOT a task-group): declared here so it precedes its consumer
-  # (the pre-split `traj_colormap` in Group Data), but its form card is floated to just
-  # before Generate Maps via the top-level `ui:order` override (see rjsf-overrides).
+  # === TRAJECTORY STYLE ===
   - name: Trajectory Category
     id: set_patrol_traj_color_column
     task: set_string_var
 
-  # === GROUP DATA (set_groupers + grouper-dependent tail + split) ===
+  # === GROUP DATA ===
   - title: Group Data
     type: task-group
     description: >-
@@ -352,9 +323,6 @@ workflow:
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
-          # pre-split source: customize_columns_traj moved post-split into Refine
-          # Patrol Data, so the temporal-index/colormap/split chain keys off the
-          # (pinned, no-op) customize_columns_internally instead.
           df: ${{ workflow.customize_columns_internally.return }}
           time_col: "segment_start"
           groupers: ${{ workflow.groupers.return }}
@@ -428,16 +396,12 @@ workflow:
           df: ${{ workflow.pe_cols_to_string.return }}
           groupers: ${{ workflow.groupers.return }}
 
-  # === REFINE PATROL DATA (post-split, per-group). Remove Columns runs before the
-  #     maps/downloads fork → affects BOTH; the SQL query is downloads-only. ===
+  # === REFINE PATROL DATA ===
   - title: Refine Patrol Data
     type: task-group
     description: >-
       Reshape and organize your patrol trajectory data before downloading.
     tasks:
-      # "Remove Columns": post-split map_columns. drop_columns stays user-facing
-      # (unpinned); the other args are pinned so only the column list renders. Feeds
-      # BOTH the maps fork (skip_traj_map) and the downloads-only SQL query.
       - name: Remove Columns
         id: customize_columns_traj
         task: map_columns
@@ -453,9 +417,6 @@ workflow:
         id: sql_query_traj
         task: apply_sql_query
         partial:
-          # Hide both the columns whitelist and the sanitize toggle from the form —
-          # default-on sanitize makes the whitelist unnecessary, and sanitize is fixed
-          # on so SQL "just works" on complex/RGBA columns.
           sanitize: true
           columns: null
         mapvalues:
@@ -466,7 +427,7 @@ workflow:
     id: persist_patrol_traj
     task: persist_grouped_dfs_for_results_download
     partial:
-      grouped_dfs: ${{ workflow.sql_query_traj.return }}   # post-split SQL output (downloads)
+      grouped_dfs: ${{ workflow.sql_query_traj.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
     skipif:
@@ -489,8 +450,6 @@ workflow:
     description: >-
       Generate maps to visualize patrol trajectories and events.
     tasks:
-      # positive "Generate maps in dashboard" toggle, chained ahead of the shared
-      # maybe_skip_df tasks (checked = generate; value=true → return=false → don't skip)
       - name: Generate Maps in Dashboard
         id: generate_maps
         task: invert_bool
@@ -501,8 +460,6 @@ workflow:
         partial:
           skip: ${{ workflow.generate_maps.return }}
         mapvalues:
-          # maps fork off Remove Columns (post-split, pre-SQL): the map reflects the
-          # column removals but NOT the downloads-only SQL query.
           argnames: df
           argvalues: ${{ workflow.customize_columns_traj.return }}
 
