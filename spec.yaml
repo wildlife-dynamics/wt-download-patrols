@@ -4,18 +4,9 @@ requirements:
   - name: ecoscope-platform
     version: ">=2.15.0, <2.16.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
-  # DEV-ONLY: validate against the local editable ext-custom (combined filter config +
-  # the three splitters, plus the shared apply_sql_query sanitize + invert_bool tasks).
-  # For publish, revert to the released remote version and drop the setuptools pin.
   - name: ecoscope-workflows-ext-custom
-    path: /Users/yunwu/MEP/wt-tasks/ecoscope-workflow-task-library/src/ecoscope-workflows-ext-custom
-    editable: true
-  # DEV-ONLY: editable ext-custom requires setuptools<=81 (pypi metadata), but the
-  # conda solve otherwise pulls setuptools 82 → conflict. Drop this when reverting to
-  # the remote ext-custom for publish.
-  - name: setuptools
-    version: "<=81.0.0"
-    channel: conda-forge
+    version: "0.1.0rc10"
+    channel: https://repo.prefix.dev/ecoscope-workflows-custom/
   # ecoscope-platform already declares this exact pydeck dependency. it is
   # re-stated here as a workaround for a known issue. for further detail, see:
   # https://github.com/wildlife-dynamics/wt/issues/167#issuecomment-4451993697
