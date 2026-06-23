@@ -856,10 +856,14 @@
           "patrols_overlap_daterange"
         ],
         "patrol_types": {
-          "ui:help": "If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types."
+          "items": {
+            "ui:help": "If you are on Ecoscope Desktop, \"Patrol Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Patrol Types."
+          }
         },
         "event_types": {
-          "ui:help": "If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types."
+          "items": {
+            "ui:help": "If you are on Ecoscope Desktop, \"Event Type\" values can be found in your EarthRanger Admin site under Activity \u2192 Event Types."
+          }
         },
         "include_null_geometry": {
           "ui:help": "Events without coordinates (point or area) will still appear in your download."

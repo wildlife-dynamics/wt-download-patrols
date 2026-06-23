@@ -107,9 +107,11 @@ rjsf-overrides:
               title: "Patrol Subject"
 
   uiSchema:
-    Patrol and Event Types.er_patrol_and_events_params.patrol_types.ui:help: >-
+    # Per-item helper → renders below each input box (inside the bordered item card),
+    # not on the array as a whole (ArrayFieldTemplate does not render array-level help).
+    Patrol and Event Types.er_patrol_and_events_params.patrol_types.items.ui:help: >-
       If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types.
-    Patrol and Event Types.er_patrol_and_events_params.event_types.ui:help: >-
+    Patrol and Event Types.er_patrol_and_events_params.event_types.items.ui:help: >-
       If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types.
     Patrol and Event Types.er_patrol_and_events_params.include_null_geometry.ui:help: >-
       Events without coordinates (point or area) will still appear in your download.
