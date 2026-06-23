@@ -9,7 +9,6 @@ from ecoscope.platform.tasks.filter import (
     get_timezone_from_time_range as get_timezone_from_time_range,
 )
 from ecoscope.platform.tasks.filter import set_time_range as set_time_range
-from ecoscope.platform.tasks.groupby import groupbykey as groupbykey
 from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
 from ecoscope.platform.tasks.groupby import split_groups as split_groups
 from ecoscope.platform.tasks.io import (
@@ -45,9 +44,6 @@ from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_v
 from ecoscope.platform.tasks.results import set_base_maps as set_base_maps
 from ecoscope.platform.tasks.skip import all_geometry_are_none as all_geometry_are_none
 from ecoscope.platform.tasks.skip import (
-    all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
-)
-from ecoscope.platform.tasks.skip import (
     any_dependency_skipped as any_dependency_skipped,
 )
 from ecoscope.platform.tasks.skip import any_is_empty_df as any_is_empty_df
@@ -66,6 +62,9 @@ from ecoscope.platform.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
+from ecoscope_workflows_ext_custom.tasks.groupby import (
+    groupbykey_passthrough_skip as groupbykey_passthrough_skip,
+)
 from ecoscope_workflows_ext_custom.tasks.io import (
     persist_grouped_dfs_for_results_download as persist_grouped_dfs_for_results_download,
 )
@@ -1010,14 +1009,14 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     combined_traj_and_pe_map_layers = (
-        task(groupbykey)
+        task(groupbykey_passthrough_skip)
         .validate()
         .set_task_instance_id("combined_traj_and_pe_map_layers")
         .handle_errors()
         .with_tracing()
         .skipif(
             conditions=[
-                all_keyed_iterables_are_skips,
+                never,
             ],
             unpack_depth=1,
         )
