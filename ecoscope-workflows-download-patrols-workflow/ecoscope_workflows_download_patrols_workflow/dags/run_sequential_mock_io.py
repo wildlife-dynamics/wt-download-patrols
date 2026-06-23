@@ -95,6 +95,9 @@ from ecoscope_workflows_ext_custom.tasks.config import (
 from ecoscope_workflows_ext_custom.tasks.config import (
     set_traj_filters as set_traj_filters,
 )
+from ecoscope_workflows_ext_custom.tasks.groupby import (
+    groupbykey_passthrough_skip as groupbykey_passthrough_skip,
+)
 from ecoscope_workflows_ext_custom.tasks.io import (
     persist_grouped_dfs_for_results_download as persist_grouped_dfs_for_results_download,
 )
