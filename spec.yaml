@@ -212,10 +212,7 @@ workflow:
   # === FILTER DATA ===
   - title: Filter Data
     type: task-group
-    description: >-
-      Filter patrol trajectories and events by location (bounding box + excluded points)
-      and by trajectory segment length, duration, and speed. Data outside these bounds is
-      removed, reducing noise and focusing on meaningful movement patterns.
+    description: " "
     tasks:
       - name: Filters
         id: patrol_filters

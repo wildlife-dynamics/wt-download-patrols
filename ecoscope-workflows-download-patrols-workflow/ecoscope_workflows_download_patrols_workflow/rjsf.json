@@ -153,7 +153,7 @@
     },
     "Filter Data": {
       "type": "object",
-      "description": "Filter patrol trajectories and events by location (bounding box + excluded points) and by trajectory segment length, duration, and speed. Data outside these bounds is removed, reducing noise and focusing on meaningful movement patterns.",
+      "description": " ",
       "ecoscope:task_group": true,
       "properties": {
         "patrol_filters": {
