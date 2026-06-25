@@ -84,11 +84,21 @@ rjsf-overrides:
 
     # --- Persist ---
     persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
+    # filetypes is a uniqueItems multi-select; its title renders as a large text-lg
+    # "subhead" (FieldTemplate isMultiSelectField branch — no uiSchema escape hatch).
+    # A " " title blanks that redundant heading (a "" would fall back to the raw key
+    # "filetypes"); the "... Download File Format" card title is the section label.
+    persist_patrol_traj.properties.filetypes.title: " "
     persist_patrol_traj.properties.filetypes.default: ["parquet"]
     persist_patrol_traj.properties.filetypes.items.enum: ["csv", "parquet"]
+    persist_patrol_traj.properties.filetypes.description: >-
+      Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.
     persist_patrol_events.properties.filename_prefix.default: "patrol_events"
+    persist_patrol_events.properties.filetypes.title: " "
     persist_patrol_events.properties.filetypes.default: ["parquet"]
     persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
+    persist_patrol_events.properties.filetypes.description: >-
+      Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.
 
   $defs:
     ValueGrouper:
@@ -312,7 +322,7 @@ workflow:
     type: task-group
     description: >-
       Configure how patrols and events are grouped (by category or temporal index) and
-      split into per-group datasets for export and mapping.
+      split into per-group datasets for exporting and mapping.
     tasks:
       - name: Group Data
         id: groupers

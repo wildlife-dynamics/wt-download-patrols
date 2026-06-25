@@ -259,7 +259,7 @@
     },
     "Group Data": {
       "type": "object",
-      "description": "Configure how patrols and events are grouped (by category or temporal index) and split into per-group datasets for export and mapping.",
+      "description": "Configure how patrols and events are grouped (by category or temporal index) and split into per-group datasets for exporting and mapping.",
       "ecoscope:task_group": true,
       "properties": {
         "groupers": {
@@ -344,9 +344,9 @@
             ],
             "type": "string"
           },
-          "title": "Filetypes",
+          "title": " ",
           "type": "array",
-          "description": "The output format",
+          "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
           "uniqueItems": true
         },
         "filename_prefix": {
@@ -375,9 +375,9 @@
             ],
             "type": "string"
           },
-          "title": "Filetypes",
+          "title": " ",
           "type": "array",
-          "description": "The output format",
+          "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
           "uniqueItems": true
         },
         "filename_prefix": {
