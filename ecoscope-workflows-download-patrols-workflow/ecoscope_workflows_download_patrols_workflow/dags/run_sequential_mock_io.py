@@ -46,12 +46,10 @@ get_event_type_display_names_from_events = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_event_type_display_names_from_events",  # 🧪
 )  # 🧪
-from ecoscope.platform.tasks.config import set_bool_var as set_bool_var
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.filter import (
     get_timezone_from_time_range as get_timezone_from_time_range,
 )
-from ecoscope.platform.tasks.groupby import groupbykey as groupbykey
 from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
 from ecoscope.platform.tasks.groupby import split_groups as split_groups
 from ecoscope.platform.tasks.io import persist_text as persist_text
@@ -70,9 +68,6 @@ from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_views
 from ecoscope.platform.tasks.results import set_base_maps as set_base_maps
 from ecoscope.platform.tasks.skip import all_geometry_are_none as all_geometry_are_none
-from ecoscope.platform.tasks.skip import (
-    all_keyed_iterables_are_skips as all_keyed_iterables_are_skips,
-)
 from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import (
     add_temporal_index as add_temporal_index,
@@ -88,9 +83,25 @@ from ecoscope.platform.tasks.transformation import (
     convert_values_to_timezone as convert_values_to_timezone,
 )
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
+from ecoscope_workflows_ext_custom.tasks.config import (
+    get_bounding_box as get_bounding_box,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    get_filter_point_coords as get_filter_point_coords,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    get_segment_filter as get_segment_filter,
+)
+from ecoscope_workflows_ext_custom.tasks.config import (
+    set_traj_filters as set_traj_filters,
+)
+from ecoscope_workflows_ext_custom.tasks.groupby import (
+    groupbykey_passthrough_skip as groupbykey_passthrough_skip,
+)
 from ecoscope_workflows_ext_custom.tasks.io import (
     persist_grouped_dfs_for_results_download as persist_grouped_dfs_for_results_download,
 )
+from ecoscope_workflows_ext_custom.tasks.skip import invert_bool as invert_bool
 from ecoscope_workflows_ext_custom.tasks.skip import maybe_skip_df as maybe_skip_df
 from ecoscope_workflows_ext_custom.tasks.transformation import (
     apply_sql_query as apply_sql_query,
@@ -327,6 +338,74 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    patrol_filters = (
+        task(set_traj_filters)
+        .validate()
+        .set_task_instance_id("patrol_filters")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("patrol_filters") or {}))
+        .call()
+    )
+
+    bounding_box = (
+        task(get_bounding_box)
+        .validate()
+        .set_task_instance_id("bounding_box")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(filters=patrol_filters, **(params.get("bounding_box") or {}))
+        .call()
+    )
+
+    filter_point_coords = (
+        task(get_filter_point_coords)
+        .validate()
+        .set_task_instance_id("filter_point_coords")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(filters=patrol_filters, **(params.get("filter_point_coords") or {}))
+        .call()
+    )
+
+    segment_filter = (
+        task(get_segment_filter)
+        .validate()
+        .set_task_instance_id("segment_filter")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(filters=patrol_filters, **(params.get("segment_filter") or {}))
+        .call()
+    )
+
     drop_extra_prefix_obs = (
         task(drop_column_prefix)
         .validate()
@@ -364,20 +443,11 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             df=drop_extra_prefix_obs,
+            bounding_box=bounding_box,
+            filter_point_coords=filter_point_coords,
             roi_gdf=None,
             roi_name=None,
             reset_index=False,
-            bounding_box={
-                "min_x": -180.0,
-                "max_x": 180.0,
-                "min_y": -90.0,
-                "max_y": 90.0,
-            },
-            filter_point_coords=[
-                {"x": 180.0, "y": 90.0},
-                {"x": 0.0, "y": 0.0},
-                {"x": 1.0, "y": 1.0},
-            ],
             **(params.get("filter_patrol_obs") or {}),
         )
         .call()
@@ -396,7 +466,11 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(relocations=filter_patrol_obs, **(params.get("patrol_traj") or {}))
+        .partial(
+            relocations=filter_patrol_obs,
+            trajectory_segment_filter=segment_filter,
+            **(params.get("patrol_traj") or {}),
+        )
         .call()
     )
 
@@ -446,10 +520,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    customize_columns_traj = (
-        task(map_columns)
+    drop_extra_prefix_events = (
+        task(drop_column_prefix)
         .validate()
-        .set_task_instance_id("customize_columns_traj")
+        .set_task_instance_id("drop_extra_prefix_events")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -460,19 +534,18 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=customize_columns_internally,
-            rename_columns={},
-            retain_columns=[],
-            raise_if_not_found=False,
-            **(params.get("customize_columns_traj") or {}),
+            df=convert_events_to_user_timezone,
+            prefix="extra__",
+            duplicate_strategy="suffix",
+            **(params.get("drop_extra_prefix_events") or {}),
         )
         .call()
     )
 
-    sql_query_traj = (
-        task(apply_sql_query)
+    filter_patrol_events = (
+        task(apply_reloc_coord_filter)
         .validate()
-        .set_task_instance_id("sql_query_traj")
+        .set_task_instance_id("filter_patrol_events")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -482,24 +555,15 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(df=customize_columns_traj, **(params.get("sql_query_traj") or {}))
-        .call()
-    )
-
-    groupers = (
-        task(set_groupers)
-        .validate()
-        .set_task_instance_id("groupers")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
+        .partial(
+            df=drop_extra_prefix_events,
+            bounding_box=bounding_box,
+            filter_point_coords=filter_point_coords,
+            roi_gdf=None,
+            roi_name=None,
+            reset_index=True,
+            **(params.get("filter_patrol_events") or {}),
         )
-        .partial(**(params.get("groupers") or {}))
         .call()
     )
 
@@ -520,6 +584,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    groupers = (
+        task(set_groupers)
+        .validate()
+        .set_task_instance_id("groupers")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("groupers") or {}))
+        .call()
+    )
+
     traj_add_temporal_index = (
         task(add_temporal_index)
         .validate()
@@ -534,7 +615,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=sql_query_traj,
+            df=customize_columns_internally,
             time_col="segment_start",
             groupers=groupers,
             cast_to_datetime=True,
@@ -604,51 +685,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             input_column_name=set_patrol_traj_color_column,
             output_column_name="patrol_traj_colormap",
             **(params.get("traj_colormap") or {}),
-        )
-        .call()
-    )
-
-    drop_extra_prefix_events = (
-        task(drop_column_prefix)
-        .validate()
-        .set_task_instance_id("drop_extra_prefix_events")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=convert_events_to_user_timezone,
-            prefix="extra__",
-            duplicate_strategy="suffix",
-            **(params.get("drop_extra_prefix_events") or {}),
-        )
-        .call()
-    )
-
-    filter_patrol_events = (
-        task(apply_reloc_coord_filter)
-        .validate()
-        .set_task_instance_id("filter_patrol_events")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            df=drop_extra_prefix_events,
-            roi_gdf=None,
-            roi_name=None,
-            reset_index=True,
-            **(params.get("filter_patrol_events") or {}),
         )
         .call()
     )
@@ -784,6 +820,45 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    customize_columns_traj = (
+        task(map_columns)
+        .validate()
+        .set_task_instance_id("customize_columns_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            rename_columns={},
+            retain_columns=[],
+            raise_if_not_found=False,
+            **(params.get("customize_columns_traj") or {}),
+        )
+        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+    )
+
+    sql_query_traj = (
+        task(apply_sql_query)
+        .validate()
+        .set_task_instance_id("sql_query_traj")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(sanitize=True, columns=None, **(params.get("sql_query_traj") or {}))
+        .mapvalues(argnames=["df"], argvalues=customize_columns_traj)
+    )
+
     persist_patrol_traj = (
         task(persist_grouped_dfs_for_results_download)
         .validate()
@@ -797,7 +872,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            grouped_dfs=split_patrol_traj_groups,
+            grouped_dfs=sql_query_traj,
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
             **(params.get("persist_patrol_traj") or {}),
@@ -826,10 +901,10 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
-    set_skip_map = (
-        task(set_bool_var)
+    generate_maps = (
+        task(invert_bool)
         .validate()
-        .set_task_instance_id("set_skip_map")
+        .set_task_instance_id("generate_maps")
         .handle_errors()
         .with_tracing()
         .skipif(
@@ -839,7 +914,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(**(params.get("set_skip_map") or {}))
+        .partial(**(params.get("generate_maps") or {}))
         .call()
     )
 
@@ -856,8 +931,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(skip=set_skip_map, **(params.get("skip_traj_map") or {}))
-        .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
+        .partial(skip=generate_maps, **(params.get("skip_traj_map") or {}))
+        .mapvalues(argnames=["df"], argvalues=customize_columns_traj)
     )
 
     skip_event_map = (
@@ -873,7 +948,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             ],
             unpack_depth=1,
         )
-        .partial(skip=set_skip_map, **(params.get("skip_event_map") or {}))
+        .partial(skip=generate_maps, **(params.get("skip_event_map") or {}))
         .mapvalues(argnames=["df"], argvalues=split_pe_groups)
     )
 
@@ -1030,14 +1105,14 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
     )
 
     combined_traj_and_pe_map_layers = (
-        task(groupbykey)
+        task(groupbykey_passthrough_skip)
         .validate()
         .set_task_instance_id("combined_traj_and_pe_map_layers")
         .handle_errors()
         .with_tracing()
         .skipif(
             conditions=[
-                all_keyed_iterables_are_skips,
+                never,
             ],
             unpack_depth=1,
         )

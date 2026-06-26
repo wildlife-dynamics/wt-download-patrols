@@ -5,21 +5,18 @@ requirements:
     version: ">=2.15.0, <2.16.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: ecoscope-workflows-ext-custom
-    version: "0.1.0rc8"
+    version: "0.1.0rc14"
     channel: https://repo.prefix.dev/ecoscope-workflows-custom/
-  # ecoscope-platform already declares this exact pydeck dependency. it is
-  # re-stated here as a workaround for a known issue. for further detail, see:
-  # https://github.com/wildlife-dynamics/wt/issues/167#issuecomment-4451993697
   - name: pydeck
     version: 0.9.2
-    channel: conda-forge 
+    channel: conda-forge
 
 rjsf-overrides:
   properties:
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.patrol_types.description: >-
-      Specify the patrol type(s) to download. Enter the "Patrol Types" value for each patrol type you want to include in the output — one per field (e.g. "ecoscope_patrol"). If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types. Leave this section empty to include all patrol types
+      Specify the patrol type(s) to download (optional). Leave this section empty to download all patrol types.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.event_types.description: >-
-      Specify the event type(s) to include (optional). Enter the "Event Types" value for each event type you want to include in the output — one per field (e.g. "wildlife_sighting_rep"). If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types. Leave this section empty to include all event types
+      Specify the event type(s) to download (optional). Leave this section empty to download all event types.
     Patrol and Event Types.properties.er_patrol_and_events_params.properties.patrol_types.ecoscope:transform:
       - transformer: EarthRangerEnumResolver
         transformer_kws:
@@ -30,29 +27,78 @@ rjsf-overrides:
         transformer_kws:
           type: event_type
           depends_on: properties.er_client_name.properties.data_source.properties.name
-    Generate Maps.properties.set_skip_map.properties.var.description: >-
-      Skip generating maps for patrol trajectories and events. Recommended for large datasets to improve performance.
-    Generate Maps.properties.set_skip_map.properties.var.default: false
-    Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
-    persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
-    persist_patrol_traj.properties.filetypes.default: ["parquet"]
-    persist_patrol_traj.properties.filetypes.items.enum: ["csv", "parquet"]
-    persist_patrol_events.properties.filename_prefix.default: "patrol_events"
-    persist_patrol_events.properties.filetypes.default: ["parquet"]
-    persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
-    Process Patrol Observations.properties.groupers.properties.groupers.items.anyOf:
-      - {"$ref": "#/$defs/ValueGrouper"}
-      - {"$ref": "#/$defs/TemporalGrouper"}
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.title: "Category"
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.default: "patrol_subject"
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.description: >-
-      Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.
-    Process Patrol Observations.properties.set_patrol_traj_color_column.properties.var.oneOf: [
+
+    # --- Patrol and Event Types: event geometry toggle ---
+    Patrol and Event Types.properties.er_patrol_and_events_params.properties.include_null_geometry.title: "Include events without a location"
+
+    # --- Filter Data: combined filter config ---
+    Filter Data.properties.patrol_filters.title: ""
+    Filter Data.properties.patrol_filters.properties.bounding_box.title: "Bounding Box"
+    Filter Data.properties.patrol_filters.properties.bounding_box.description: >-
+      Only include patrol observations and events whose coordinates fall inside this
+      bounding box. Applies to BOTH the patrol trajectories and the patrol events.
+    Filter Data.properties.patrol_filters.properties.filter_point_coords.title: "Filter Exact Point Coordinates"
+    Filter Data.properties.patrol_filters.properties.filter_point_coords.description: >-
+      Exclude observations and events recorded at these exact coordinates (e.g. known
+      bad GPS fixes). Applies to BOTH the patrol trajectories and the patrol events.
+    Filter Data.properties.patrol_filters.properties.trajectory_segment_filter.title: "Trajectory Filter"
+    Filter Data.properties.patrol_filters.properties.trajectory_segment_filter.description: >-
+      Drop trajectory segments outside these length / time / speed bounds (e.g. to remove
+      implausible jumps). Applies to the patrol trajectories only.
+
+    # --- Trajectory Style: color column var ---
+    set_patrol_traj_color_column.description: "Differentiate tracks by color using the selected category."
+    set_patrol_traj_color_column.properties.var.title: "Category"
+    set_patrol_traj_color_column.properties.var.default: "patrol_subject"
+    set_patrol_traj_color_column.properties.var.oneOf: [
       {"const": "patrol_type", "title": "Patrol Type"},
       {"const": "patrol_status", "title": "Patrol Status"},
       {"const": "patrol_subject", "title": "Patrol Subject"},
       {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
     ]
+
+    # --- Group Data: grouper override ---
+    Group Data.properties.groupers.title: ""
+    Group Data.properties.groupers.properties.groupers.description: ""
+    Group Data.properties.groupers.properties.groupers.items.anyOf:
+      - {"$ref": "#/$defs/ValueGrouper"}
+      - {"$ref": "#/$defs/TemporalGrouper"}
+
+    # --- Refine Patrol Data: Remove Columns ---
+    Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.title: " "
+    Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.items.title: "Column Name"
+    Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.description: >-
+      Columns listed here will be left out of both the generated map and your download.
+      If you're not sure, try running the workflow first to see all available columns.
+    # --- Refine Patrol Data: trajectory SQL query ---
+    Refine Patrol Data.properties.sql_query_traj.properties.query.title: "SQL Query"
+    Refine Patrol Data.properties.sql_query_traj.properties.query.description: >-
+      Write a SQL query to filter or transform your data. Leave blank to skip this step. Use df as the table name (e.g., SELECT * FROM df WHERE status = 'active'). Note that queries only apply to your downloaded files and not the generated map.
+
+    # --- Generate Maps: positive maps toggle ---
+    Generate Maps.properties.generate_maps.title: ""
+    Generate Maps.properties.generate_maps.properties.value.title: "Generate maps in dashboard"
+    Generate Maps.properties.generate_maps.properties.value.default: true
+    Generate Maps.properties.generate_maps.properties.value.description: ""
+    Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
+
+    # --- Persist ---
+    persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
+    # filetypes is a uniqueItems multi-select; its title renders as a large text-lg
+    # "subhead" (FieldTemplate isMultiSelectField branch — no uiSchema escape hatch).
+    # A " " title blanks that redundant heading (a "" would fall back to the raw key
+    # "filetypes"); the "... Download File Format" card title is the section label.
+    persist_patrol_traj.properties.filetypes.title: " "
+    persist_patrol_traj.properties.filetypes.default: ["parquet"]
+    persist_patrol_traj.properties.filetypes.items.enum: ["csv", "parquet"]
+    persist_patrol_traj.properties.filetypes.description: >-
+      Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.
+    persist_patrol_events.properties.filename_prefix.default: "patrol_events"
+    persist_patrol_events.properties.filetypes.title: " "
+    persist_patrol_events.properties.filetypes.default: ["parquet"]
+    persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
+    persist_patrol_events.properties.filetypes.description: >-
+      Choose the file format for your download. 
 
   $defs:
     ValueGrouper:
@@ -71,9 +117,30 @@ rjsf-overrides:
               title: "Patrol Subject"
 
   uiSchema:
-    Process Patrol Observations.filter_patrol_obs.filter_point_coords.items.ui:options.label: false
-    Process Patrol Events.filter_patrol_events.filter_point_coords.items.ui:options.label: false
+    # Per-item helper → renders below each input box (inside the bordered item card),
+    # not on the array as a whole (ArrayFieldTemplate does not render array-level help).
+    Patrol and Event Types.er_patrol_and_events_params.patrol_types.items.ui:help: >-
+      If you are on Ecoscope Desktop, "Patrol Type" values can be found in your EarthRanger Admin site under Activity → Patrol Types.
+    Patrol and Event Types.er_patrol_and_events_params.event_types.items.ui:help: >-
+      If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types.
+    Patrol and Event Types.er_patrol_and_events_params.include_null_geometry.ui:help: >-
+      Events without coordinates (point or area) will still appear in your download.
+    Filter Data.patrol_filters.filter_point_coords.items.ui:options.label: false
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
+    Generate Maps.generate_maps.value.ui:help: >-
+      Not recommended for large datasets to improve performance.
+    ui:order:
+      - workflow_details
+      - er_client_name
+      - time_range
+      - Patrol and Event Types
+      - Filter Data
+      - Group Data
+      - Refine Patrol Data
+      - persist_patrol_traj
+      - persist_patrol_events
+      - set_patrol_traj_color_column
+      - Generate Maps
 
 task-instance-defaults:
   skipif:
@@ -152,89 +219,120 @@ workflow:
       timezone: ${{ workflow.get_timezone.return }}
       columns: ["time"]
 
-  - title: Process Patrol Observations
+  # === FILTER DATA ===
+  - title: Filter Data
+    type: task-group
+    description: " "
+    tasks:
+      - name: Filters
+        id: patrol_filters
+        task: set_traj_filters
+
+  # --- Combined-filter splitters ---
+  - name: Split Bounding Box
+    id: bounding_box
+    task: get_bounding_box
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  - name: Split Point Coordinates
+    id: filter_point_coords
+    task: get_filter_point_coords
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  - name: Split Segment Filter
+    id: segment_filter
+    task: get_segment_filter
+    partial:
+      filters: ${{ workflow.patrol_filters.return }}
+
+  # --- Trajectory branch ---
+  - name: Remove Column Prefix Extra (Observations)
+    id: drop_extra_prefix_obs
+    task: drop_column_prefix
+    partial:
+      df: ${{ workflow.convert_patrols_to_user_timezone.return }}
+      prefix: "extra__"
+      duplicate_strategy: "suffix"
+
+  - name: Filter Observation Relocations
+    id: filter_patrol_obs
+    task: apply_reloc_coord_filter
+    partial:
+      df: ${{ workflow.drop_extra_prefix_obs.return }}
+      bounding_box: ${{ workflow.bounding_box.return }}
+      filter_point_coords: ${{ workflow.filter_point_coords.return }}
+      roi_gdf: null
+      roi_name: null
+      reset_index: false
+
+  - name: Build Patrol Trajectories
+    id: patrol_traj
+    task: relocations_to_trajectory
+    partial:
+      relocations: ${{ workflow.filter_patrol_obs.return }}
+      trajectory_segment_filter: ${{ workflow.segment_filter.return }}
+
+  - name: Remove Column Prefix Extra (Trajectories)
+    id: drop_extra_prefix_traj
+    task: drop_column_prefix
+    partial:
+      df: ${{ workflow.patrol_traj.return }}
+      prefix: "extra__"
+      duplicate_strategy: "suffix"
+
+  - name: Internally Process Columns
+    id: customize_columns_internally
+    task: map_columns
+    partial:
+      df: ${{ workflow.drop_extra_prefix_traj.return }}
+      rename_columns: {}
+      drop_columns: ["id"]
+      retain_columns: []
+      raise_if_not_found: false
+
+  # --- Events branch ---
+  - name: Remove Column Prefix Extra (Events)
+    id: drop_extra_prefix_events
+    task: drop_column_prefix
+    partial:
+      df: ${{ workflow.convert_events_to_user_timezone.return }}
+      prefix: "extra__"
+      duplicate_strategy: "suffix"
+
+  - name: Apply Coordinate Filter to Patrol Events
+    id: filter_patrol_events
+    task: apply_reloc_coord_filter
+    partial:
+      df: ${{ workflow.drop_extra_prefix_events.return }}
+      bounding_box: ${{ workflow.bounding_box.return }}
+      filter_point_coords: ${{ workflow.filter_point_coords.return }}
+      roi_gdf: null
+      roi_name: null
+      reset_index: true
+
+  # === TRAJECTORY STYLE ===
+  - name: Trajectory Category
+    id: set_patrol_traj_color_column
+    task: set_string_var
+
+  # === GROUP DATA ===
+  - title: Group Data
     type: task-group
     description: >-
-      Process patrol observations by applying filters, column transformations, and SQL queries.
+      Configure how patrols and events are grouped (by category or temporal index) and
+      split into per-group datasets for exporting and mapping.
     tasks:
-      - name: Remove Column Prefix Extra
-        id: drop_extra_prefix_obs
-        task: drop_column_prefix
-        partial:
-          df: ${{ workflow.convert_patrols_to_user_timezone.return }}
-          prefix: "extra__"
-          duplicate_strategy: "suffix"
-
-      - name: Filter Observation Relocations
-        id: filter_patrol_obs
-        task: apply_reloc_coord_filter
-        partial:
-          df: ${{ workflow.drop_extra_prefix_obs.return }}
-          roi_gdf: null
-          roi_name: null
-          reset_index: false
-          bounding_box:
-            min_x: -180.0
-            max_x: 180.0
-            min_y: -90.0
-            max_y: 90.0
-          filter_point_coords:
-            - {x: 180.0, y: 90.0}
-            - {x: 0.0, y: 0.0}
-            - {x: 1.0, y: 1.0}
-
-      - name: Trajectory Segment Filter
-        id: patrol_traj
-        task: relocations_to_trajectory
-        partial:
-          relocations: ${{ workflow.filter_patrol_obs.return }}
-
-      - name: Remove Column Prefix Extra
-        id: drop_extra_prefix_traj
-        task: drop_column_prefix
-        partial:
-          df: ${{ workflow.patrol_traj.return }}
-          prefix: "extra__"
-          duplicate_strategy: "suffix"
-
-      - name: Internally Process Columns
-        id: customize_columns_internally
-        task: map_columns
-        partial:
-          df: ${{ workflow.drop_extra_prefix_traj.return }}
-          rename_columns: {}
-          drop_columns: ["id"]
-          retain_columns: []
-          raise_if_not_found: false
-
-      - name: Process Columns
-        id: customize_columns_traj
-        task: map_columns
-        partial:
-          df: ${{ workflow.customize_columns_internally.return }}
-          rename_columns: {}
-          retain_columns: []
-          raise_if_not_found: false
-
-      - name: Apply SQL Query
-        id: sql_query_traj
-        task: apply_sql_query
-        partial:
-          df: ${{ workflow.customize_columns_traj.return }}
-
       - name: Group Data
         id: groupers
         task: set_groupers
-
-      - name: Style Trajectory By Category
-        id: set_patrol_traj_color_column
-        task: set_string_var
 
       - name: Add temporal index to Patrol Trajectories
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
-          df: ${{ workflow.sql_query_traj.return }}
+          df: ${{ workflow.customize_columns_internally.return }}
           time_col: "segment_start"
           groupers: ${{ workflow.groupers.return }}
           cast_to_datetime: true
@@ -259,27 +357,6 @@ workflow:
           colormap: ["#FF9600", "#F23B0E", "#A100CB", "#F04564", "#03421A", "#3089FF", "#E26FFF", "#8C1700", "#002960", "#FFD000", "#B62879", "#680078", "#005A56", "#0056C7", "#331878", "#E76826"]
           input_column_name: ${{ workflow.set_patrol_traj_color_column.return }}
           output_column_name: "patrol_traj_colormap"
-  - title: Process Patrol Events
-    type: task-group
-    description: >-
-      Process patrol events by applying filters.
-    tasks:
-      - name: Remove Column Prefix Extra
-        id: drop_extra_prefix_events
-        task: drop_column_prefix
-        partial:
-          df: ${{ workflow.convert_events_to_user_timezone.return }}
-          prefix: "extra__"
-          duplicate_strategy: "suffix"
-
-      - name: Apply Coordinate Filter to Patrol Events
-        id: filter_patrol_events
-        task: apply_reloc_coord_filter
-        partial:
-          df: ${{ workflow.drop_extra_prefix_events.return }}
-          roi_gdf: null
-          roi_name: null
-          reset_index: true
 
       - name: Add temporal index to Patrol Events
         id: pe_add_temporal_index
@@ -299,46 +376,74 @@ workflow:
           input_column_name: "event_type"
           colormap: "tab20b"
           output_column_name: "event_type_colormap"
-          
-  - name: Cast Patrol Trajectory Columns
-    id: patrol_traj_cols_to_string
-    task: convert_column_values_to_string
-    partial:
-      df: ${{ workflow.traj_colormap.return }}
-      columns: ["patrol_serial_number", "patrol_type"]
 
-  - name: Cast Patrol Events Columns
-    id: pe_cols_to_string
-    task: convert_column_values_to_string
-    partial:
-      df: ${{ workflow.pe_colormap.return }}
-      columns: ["patrol_serial_number", "patrol_type"]
-  - name: Split Patrol Trajectories by Group
-    id: split_patrol_traj_groups
-    task: split_groups
-    partial:
-      df: ${{ workflow.patrol_traj_cols_to_string.return }}
-      groupers: ${{ workflow.groupers.return }}
+      - name: Cast Patrol Trajectory Columns
+        id: patrol_traj_cols_to_string
+        task: convert_column_values_to_string
+        partial:
+          df: ${{ workflow.traj_colormap.return }}
+          columns: ["patrol_serial_number", "patrol_type"]
 
-  - name: Split Patrol Events by Group
-    id: split_pe_groups
-    task: split_groups
-    partial:
-      df: ${{ workflow.pe_cols_to_string.return }}
-      groupers: ${{ workflow.groupers.return }}
+      - name: Cast Patrol Events Columns
+        id: pe_cols_to_string
+        task: convert_column_values_to_string
+        partial:
+          df: ${{ workflow.pe_colormap.return }}
+          columns: ["patrol_serial_number", "patrol_type"]
 
-  - name: Persist Patrol Trajectories
+      - name: Split Patrol Trajectories by Group
+        id: split_patrol_traj_groups
+        task: split_groups
+        partial:
+          df: ${{ workflow.patrol_traj_cols_to_string.return }}
+          groupers: ${{ workflow.groupers.return }}
+
+      - name: Split Patrol Events by Group
+        id: split_pe_groups
+        task: split_groups
+        partial:
+          df: ${{ workflow.pe_cols_to_string.return }}
+          groupers: ${{ workflow.groupers.return }}
+
+  # === REFINE PATROL DATA ===
+  - title: Refine Patrol Data
+    type: task-group
+    description: >-
+      Reshape and organize your patrol trajectory data before downloading.
+    tasks:
+      - name: Remove Columns
+        id: customize_columns_traj
+        task: map_columns
+        partial:
+          rename_columns: {}
+          retain_columns: []
+          raise_if_not_found: false
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.split_patrol_traj_groups.return }}
+
+      - name: Apply SQL Query
+        id: sql_query_traj
+        task: apply_sql_query
+        partial:
+          sanitize: true
+          columns: null
+        mapvalues:
+          argnames: df
+          argvalues: ${{ workflow.customize_columns_traj.return }}
+
+  - name: Patrol Track Download File Format
     id: persist_patrol_traj
     task: persist_grouped_dfs_for_results_download
     partial:
-      grouped_dfs: ${{ workflow.split_patrol_traj_groups.return }}
+      grouped_dfs: ${{ workflow.sql_query_traj.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
     skipif:
       conditions:
         - never
 
-  - name: Persist Patrol Events
+  - name: Event Download File Format
     id: persist_patrol_events
     task: persist_grouped_dfs_for_results_download
     partial:
@@ -354,24 +459,24 @@ workflow:
     description: >-
       Generate maps to visualize patrol trajectories and events.
     tasks:
-      - name: Skip Map Generation
-        id: set_skip_map
-        task: set_bool_var
+      - name: Generate Maps in Dashboard
+        id: generate_maps
+        task: invert_bool
 
       - name: ""
         id: skip_traj_map
         task: maybe_skip_df
         partial:
-          skip: ${{ workflow.set_skip_map.return }}
+          skip: ${{ workflow.generate_maps.return }}
         mapvalues:
           argnames: df
-          argvalues: ${{ workflow.split_patrol_traj_groups.return }}
+          argvalues: ${{ workflow.customize_columns_traj.return }}
 
       - name: ""
         id: skip_event_map
         task: maybe_skip_df
         partial:
-          skip: ${{ workflow.set_skip_map.return }}
+          skip: ${{ workflow.generate_maps.return }}
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.split_pe_groups.return }}
@@ -459,10 +564,10 @@ workflow:
 
       - name: Combine Trajectories and Patrol Events Layers
         id: combined_traj_and_pe_map_layers
-        task: groupbykey
+        task: groupbykey_passthrough_skip
         skipif:
           conditions:
-            - all_keyed_iterables_are_skips
+            - never
           unpack_depth: 1
         partial:
           iterables:
