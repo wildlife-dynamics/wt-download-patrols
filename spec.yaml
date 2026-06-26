@@ -98,7 +98,7 @@ rjsf-overrides:
     persist_patrol_events.properties.filetypes.default: ["parquet"]
     persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
     persist_patrol_events.properties.filetypes.description: >-
-      Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.
+      Choose the file format for your download. 
 
   $defs:
     ValueGrouper:

@@ -377,7 +377,7 @@
           },
           "title": " ",
           "type": "array",
-          "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
+          "description": "Choose the file format for your download. ",
           "uniqueItems": true
         },
         "filename_prefix": {
