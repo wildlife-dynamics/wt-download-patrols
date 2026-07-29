@@ -59,6 +59,7 @@ from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
 from ecoscope.platform.tasks.preprocessing import (
     relocations_to_trajectory as relocations_to_trajectory,
 )
+from ecoscope.platform.tasks.results import set_base_maps as set_base_maps
 from ecoscope.platform.tasks.skip import invert_bool as invert_bool
 from ecoscope.platform.tasks.transformation import (
     apply_reloc_coord_filter as apply_reloc_coord_filter,
@@ -96,7 +97,6 @@ from ecoscope.platform.tasks.results import (
 from ecoscope.platform.tasks.results import draw_ecomap as draw_ecomap
 from ecoscope.platform.tasks.results import gather_dashboard as gather_dashboard
 from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_views
-from ecoscope.platform.tasks.results import set_base_maps as set_base_maps
 from ecoscope.platform.tasks.skip import all_geometry_are_none as all_geometry_are_none
 from ecoscope.platform.tasks.skip import maybe_skip_df as maybe_skip_df
 from ecoscope.platform.tasks.skip import never as never
@@ -624,6 +624,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    base_map_defs = (
+        task(set_base_maps)
+        .validate()
+        .set_task_instance_id("base_map_defs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("base_map_defs") or {}))
+        .call()
+    )
+
     groupers = (
         task(set_groupers)
         .validate()
@@ -1091,23 +1108,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             var="Patrol Trajectories and Events Map",
             **(params.get("set_patrol_map_title") or {}),
         )
-        .call()
-    )
-
-    base_map_defs = (
-        task(set_base_maps)
-        .validate()
-        .set_task_instance_id("base_map_defs")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("base_map_defs") or {}))
         .call()
     )
 

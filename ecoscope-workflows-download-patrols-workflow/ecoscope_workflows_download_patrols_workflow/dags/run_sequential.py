@@ -603,6 +603,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    base_map_defs = (
+        task(set_base_maps)
+        .validate()
+        .set_task_instance_id("base_map_defs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("base_map_defs") or {}))
+        .call()
+    )
+
     groupers = (
         task(set_groupers)
         .validate()
@@ -1070,23 +1087,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             var="Patrol Trajectories and Events Map",
             **(params.get("set_patrol_map_title") or {}),
         )
-        .call()
-    )
-
-    base_map_defs = (
-        task(set_base_maps)
-        .validate()
-        .set_task_instance_id("base_map_defs")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("base_map_defs") or {}))
         .call()
     )
 

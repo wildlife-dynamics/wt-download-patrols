@@ -221,6 +221,80 @@
       "description": "Generate maps to visualize patrol trajectories and events.",
       "ecoscope:task_group": true,
       "properties": {
+        "generate_maps": {
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "default": true,
+              "title": "Generate maps in dashboard",
+              "type": "boolean",
+              "description": ""
+            }
+          },
+          "type": "object",
+          "required": [],
+          "title": ""
+        },
+        "set_patrol_traj_color_column": {
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "title": "Category",
+              "type": "string",
+              "default": "patrol_subject",
+              "oneOf": [
+                {
+                  "const": "patrol_type",
+                  "title": "Patrol Type"
+                },
+                {
+                  "const": "patrol_status",
+                  "title": "Patrol Status"
+                },
+                {
+                  "const": "patrol_subject",
+                  "title": "Patrol Subject"
+                },
+                {
+                  "const": "patrol_serial_number",
+                  "title": "Patrol Serial Number"
+                }
+              ]
+            }
+          },
+          "required": [
+            "var"
+          ],
+          "type": "object",
+          "title": "Trajectory Category",
+          "description": "Differentiate tracks by color using the selected category."
+        },
+        "set_patrol_event_color_column": {
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "title": "Category",
+              "type": "string",
+              "default": "event_type",
+              "oneOf": [
+                {
+                  "const": "event_type",
+                  "title": "Event Type"
+                },
+                {
+                  "const": "event_category",
+                  "title": "Event Category"
+                }
+              ]
+            }
+          },
+          "required": [
+            "var"
+          ],
+          "type": "object",
+          "title": "Event Category",
+          "description": "Differentiate events by color using the selected category."
+        },
         "base_map_defs": {
           "additionalProperties": false,
           "properties": {
@@ -413,62 +487,6 @@
           "type": "object",
           "required": [],
           "title": " "
-        },
-        "set_patrol_traj_color_column": {
-          "description": "Differentiate tracks by color using the selected category.",
-          "properties": {
-            "var": {
-              "title": "Category",
-              "default": "patrol_subject",
-              "oneOf": [
-                {
-                  "const": "patrol_type",
-                  "title": "Patrol Type"
-                },
-                {
-                  "const": "patrol_status",
-                  "title": "Patrol Status"
-                },
-                {
-                  "const": "patrol_subject",
-                  "title": "Patrol Subject"
-                },
-                {
-                  "const": "patrol_serial_number",
-                  "title": "Patrol Serial Number"
-                }
-              ]
-            }
-          }
-        },
-        "set_patrol_event_color_column": {
-          "description": "Differentiate events by color using the selected category.",
-          "properties": {
-            "var": {
-              "title": "Category",
-              "default": "event_type",
-              "oneOf": [
-                {
-                  "const": "event_type",
-                  "title": "Event Type"
-                },
-                {
-                  "const": "event_category",
-                  "title": "Event Category"
-                }
-              ]
-            }
-          }
-        },
-        "generate_maps": {
-          "title": "",
-          "properties": {
-            "value": {
-              "title": "Generate maps in dashboard",
-              "default": true,
-              "description": ""
-            }
-          }
         }
       }
     },

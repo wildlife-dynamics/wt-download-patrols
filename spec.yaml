@@ -337,8 +337,10 @@ workflow:
 
   # === GENERATE MAPS (user-facing config) ===
   # This card merges with the map-rendering task-group of the same title below
-  # (patrol-trajectory-event-map pattern); the checkbox and the two colour
-  # category selectors render together at the top of the Generate Maps card.
+  # (patrol-trajectory-event-map pattern). ALL field-bearing tasks of the card
+  # must live in THIS group: a later same-title group that contributes any
+  # params clobbers the earlier group's schema, so the rendering group below
+  # holds only fully-partialed (field-less) tasks.
   - title: Generate Maps
     type: task-group
     description: >-
@@ -355,6 +357,10 @@ workflow:
       - name: Event Category
         id: set_patrol_event_color_column
         task: set_string_var
+
+      - name: " "
+        id: base_map_defs
+        task: set_base_maps
 
   # === GROUP DATA ===
   - title: Group Data
@@ -566,10 +572,6 @@ workflow:
         task: set_string_var
         partial:
           var: "Patrol Trajectories and Events Map"
-
-      - name: " "
-        id: base_map_defs
-        task: set_base_maps
 
       - name: Rename Trajectory Columns for Display
         id: rename_traj_display_columns
