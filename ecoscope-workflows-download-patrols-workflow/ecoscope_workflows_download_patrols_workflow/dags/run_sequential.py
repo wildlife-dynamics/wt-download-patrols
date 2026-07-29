@@ -172,6 +172,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             raise_on_empty=False,
             truncate_to_time_range=True,
             sub_page_size=100,
+            patrols_overlap_daterange=True,
             **(params.get("er_patrol_and_events_params") or {}),
         )
         .call()
@@ -548,6 +549,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             reset_index=True,
             **(params.get("filter_patrol_events") or {}),
         )
+        .call()
+    )
+
+    generate_maps = (
+        task(invert_bool)
+        .validate()
+        .set_task_instance_id("generate_maps")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("generate_maps") or {}))
         .call()
     )
 
@@ -998,23 +1016,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             sanitize=True,
             **(params.get("persist_patrol_events") or {}),
         )
-        .call()
-    )
-
-    generate_maps = (
-        task(invert_bool)
-        .validate()
-        .set_task_instance_id("generate_maps")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(**(params.get("generate_maps") or {}))
         .call()
     )
 

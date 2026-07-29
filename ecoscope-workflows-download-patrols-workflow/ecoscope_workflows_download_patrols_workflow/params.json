@@ -110,13 +110,6 @@
           "default": true,
           "title": "Include Events Without a Geometry (point or polygon)",
           "type": "boolean"
-        },
-        "patrols_overlap_daterange": {
-          "default": true,
-          "title": "Patrols Overlap Daterange",
-          "type": "boolean",
-          "description": "Whether or not to include patrols that start or end outside of the time range",
-          "ecoscope:advanced": true
         }
       },
       "required": [
@@ -190,6 +183,20 @@
       "type": "object",
       "required": [],
       "title": "Filters"
+    },
+    "generate_maps": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "default": true,
+          "title": "Value",
+          "type": "boolean",
+          "description": "The boolean value to negate."
+        }
+      },
+      "type": "object",
+      "required": [],
+      "title": "Generate Maps in Dashboard"
     },
     "set_patrol_traj_color_column": {
       "additionalProperties": false,
@@ -345,20 +352,6 @@
       "required": [],
       "type": "object",
       "title": "Event Download File Format"
-    },
-    "generate_maps": {
-      "additionalProperties": false,
-      "properties": {
-        "value": {
-          "default": true,
-          "title": "Value",
-          "type": "boolean",
-          "description": "The boolean value to negate."
-        }
-      },
-      "type": "object",
-      "required": [],
-      "title": "Generate Maps in Dashboard"
     },
     "base_map_defs": {
       "additionalProperties": false,
@@ -787,8 +780,7 @@
         "patrol_types",
         "event_types",
         "status",
-        "include_null_geometry",
-        "patrols_overlap_daterange"
+        "include_null_geometry"
       ]
     },
     "patrol_filters": {
@@ -816,6 +808,7 @@
       "time_range",
       "er_patrol_and_events_params",
       "patrol_filters",
+      "generate_maps",
       "set_patrol_traj_color_column",
       "set_patrol_event_color_column",
       "groupers",
@@ -823,7 +816,6 @@
       "sql_query_traj",
       "persist_patrol_traj",
       "persist_patrol_events",
-      "generate_maps",
       "base_map_defs"
     ]
   },

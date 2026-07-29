@@ -133,13 +133,6 @@
               "default": true,
               "title": "Include events without a location",
               "type": "boolean"
-            },
-            "patrols_overlap_daterange": {
-              "default": true,
-              "title": "Patrols Overlap Daterange",
-              "type": "boolean",
-              "description": "Whether or not to include patrols that start or end outside of the time range",
-              "ecoscope:advanced": true
             }
           },
           "required": [
@@ -223,232 +216,11 @@
         }
       }
     },
-    "set_patrol_traj_color_column": {
-      "additionalProperties": false,
-      "properties": {
-        "var": {
-          "title": "Category",
-          "type": "string",
-          "default": "patrol_subject",
-          "oneOf": [
-            {
-              "const": "patrol_type",
-              "title": "Patrol Type"
-            },
-            {
-              "const": "patrol_status",
-              "title": "Patrol Status"
-            },
-            {
-              "const": "patrol_subject",
-              "title": "Patrol Subject"
-            },
-            {
-              "const": "patrol_serial_number",
-              "title": "Patrol Serial Number"
-            }
-          ]
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Trajectory Category",
-      "description": "Differentiate tracks by color using the selected category."
-    },
-    "set_patrol_event_color_column": {
-      "additionalProperties": false,
-      "properties": {
-        "var": {
-          "title": "Category",
-          "type": "string",
-          "default": "event_type",
-          "oneOf": [
-            {
-              "const": "event_type",
-              "title": "Event Type"
-            },
-            {
-              "const": "event_category",
-              "title": "Event Category"
-            }
-          ]
-        }
-      },
-      "required": [
-        "var"
-      ],
-      "type": "object",
-      "title": "Event Category",
-      "description": "Differentiate events by color using the selected category."
-    },
-    "Group Data": {
-      "type": "object",
-      "description": "Configure how patrols and events are grouped (by category or temporal index) and split into per-group datasets for exporting and mapping.",
-      "ecoscope:task_group": true,
-      "properties": {
-        "groupers": {
-          "additionalProperties": false,
-          "properties": {
-            "groupers": {
-              "default": null,
-              "items": {
-                "anyOf": [
-                  {
-                    "$ref": "#/$defs/ValueGrouper"
-                  },
-                  {
-                    "$ref": "#/$defs/TemporalGrouper"
-                  },
-                  {
-                    "$ref": "#/$defs/SpatialGrouper"
-                  }
-                ],
-                "title": "Group by"
-              },
-              "title": " ",
-              "type": "array",
-              "description": "",
-              "ecoscope:transform": [
-                {
-                  "transformer": "EarthRangerEnumResolver",
-                  "transformer_kws": {
-                    "type": "spatial_feature_group",
-                    "depends_on": "properties.er_client_name.properties.data_source.properties.name"
-                  }
-                }
-              ]
-            }
-          },
-          "type": "object",
-          "required": [],
-          "title": ""
-        }
-      }
-    },
-    "Refine Patrol Data": {
-      "type": "object",
-      "description": "Reshape and organize your patrol trajectory data before downloading.",
-      "ecoscope:task_group": true,
-      "properties": {
-        "customize_columns_traj": {
-          "additionalProperties": false,
-          "properties": {
-            "drop_columns": {
-              "default": [],
-              "items": {
-                "type": "string",
-                "title": "Column Name"
-              },
-              "title": " ",
-              "type": "array",
-              "description": "Columns listed here will be left out of both the generated map and your download. If you're not sure, try running the workflow first to see all available columns.",
-              "ecoscope:advanced": true
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Remove Columns"
-        },
-        "sql_query_traj": {
-          "additionalProperties": false,
-          "properties": {
-            "query": {
-              "default": "",
-              "title": "SQL Query",
-              "type": "string",
-              "description": "Write a SQL query to filter or transform your data. Leave blank to skip this step. Use df as the table name (e.g., SELECT * FROM df WHERE status = 'active'). Note that queries only apply to your downloaded files and not the generated map.",
-              "ecoscope:advanced": true
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Apply SQL Query"
-        }
-      }
-    },
-    "persist_patrol_traj": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "parquet"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": " ",
-          "type": "array",
-          "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": "patrol_trajectories",
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Patrol Track Download File Format"
-    },
-    "persist_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "parquet"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": " ",
-          "type": "array",
-          "description": "Choose the file format for your download. ",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": "patrol_events",
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Event Download File Format"
-    },
     "Generate Maps": {
       "type": "object",
       "description": "Generate maps to visualize patrol trajectories and events.",
       "ecoscope:task_group": true,
       "properties": {
-        "generate_maps": {
-          "additionalProperties": false,
-          "properties": {
-            "value": {
-              "default": true,
-              "title": "Generate maps in dashboard",
-              "type": "boolean",
-              "description": ""
-            }
-          },
-          "type": "object",
-          "required": [],
-          "title": ""
-        },
         "base_map_defs": {
           "additionalProperties": false,
           "properties": {
@@ -641,8 +413,211 @@
           "type": "object",
           "required": [],
           "title": " "
+        },
+        "set_patrol_traj_color_column": {
+          "description": "Differentiate tracks by color using the selected category.",
+          "properties": {
+            "var": {
+              "title": "Category",
+              "default": "patrol_subject",
+              "oneOf": [
+                {
+                  "const": "patrol_type",
+                  "title": "Patrol Type"
+                },
+                {
+                  "const": "patrol_status",
+                  "title": "Patrol Status"
+                },
+                {
+                  "const": "patrol_subject",
+                  "title": "Patrol Subject"
+                },
+                {
+                  "const": "patrol_serial_number",
+                  "title": "Patrol Serial Number"
+                }
+              ]
+            }
+          }
+        },
+        "set_patrol_event_color_column": {
+          "description": "Differentiate events by color using the selected category.",
+          "properties": {
+            "var": {
+              "title": "Category",
+              "default": "event_type",
+              "oneOf": [
+                {
+                  "const": "event_type",
+                  "title": "Event Type"
+                },
+                {
+                  "const": "event_category",
+                  "title": "Event Category"
+                }
+              ]
+            }
+          }
+        },
+        "generate_maps": {
+          "title": "",
+          "properties": {
+            "value": {
+              "title": "Generate maps in dashboard",
+              "default": true,
+              "description": ""
+            }
+          }
         }
       }
+    },
+    "Group Data": {
+      "type": "object",
+      "description": "Configure how patrols and events are grouped (by category or temporal index) and split into per-group datasets for exporting and mapping.",
+      "ecoscope:task_group": true,
+      "properties": {
+        "groupers": {
+          "additionalProperties": false,
+          "properties": {
+            "groupers": {
+              "default": null,
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/ValueGrouper"
+                  },
+                  {
+                    "$ref": "#/$defs/TemporalGrouper"
+                  },
+                  {
+                    "$ref": "#/$defs/SpatialGrouper"
+                  }
+                ],
+                "title": "Group by"
+              },
+              "title": " ",
+              "type": "array",
+              "description": "",
+              "ecoscope:transform": [
+                {
+                  "transformer": "EarthRangerEnumResolver",
+                  "transformer_kws": {
+                    "type": "spatial_feature_group",
+                    "depends_on": "properties.er_client_name.properties.data_source.properties.name"
+                  }
+                }
+              ]
+            }
+          },
+          "type": "object",
+          "required": [],
+          "title": ""
+        }
+      }
+    },
+    "Refine Patrol Data": {
+      "type": "object",
+      "description": "Reshape and organize your patrol trajectory data before downloading.",
+      "ecoscope:task_group": true,
+      "properties": {
+        "customize_columns_traj": {
+          "additionalProperties": false,
+          "properties": {
+            "drop_columns": {
+              "default": [],
+              "items": {
+                "type": "string",
+                "title": "Column Name"
+              },
+              "title": " ",
+              "type": "array",
+              "description": "Columns listed here will be left out of both the generated map and your download. If you're not sure, try running the workflow first to see all available columns.",
+              "ecoscope:advanced": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": "Remove Columns"
+        },
+        "sql_query_traj": {
+          "additionalProperties": false,
+          "properties": {
+            "query": {
+              "default": "",
+              "title": "SQL Query",
+              "type": "string",
+              "description": "Write a SQL query to filter or transform your data. Leave blank to skip this step. Use df as the table name (e.g., SELECT * FROM df WHERE status = 'active'). Note that queries only apply to your downloaded files and not the generated map.",
+              "ecoscope:advanced": true
+            }
+          },
+          "required": [],
+          "type": "object",
+          "title": "Apply SQL Query"
+        }
+      }
+    },
+    "persist_patrol_traj": {
+      "additionalProperties": false,
+      "properties": {
+        "filetypes": {
+          "default": [
+            "parquet"
+          ],
+          "items": {
+            "enum": [
+              "csv",
+              "parquet"
+            ],
+            "type": "string"
+          },
+          "title": " ",
+          "type": "array",
+          "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
+          "uniqueItems": true
+        },
+        "filename_prefix": {
+          "default": "patrol_trajectories",
+          "title": "Filename Prefix",
+          "type": "string",
+          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Patrol Track Download File Format"
+    },
+    "persist_patrol_events": {
+      "additionalProperties": false,
+      "properties": {
+        "filetypes": {
+          "default": [
+            "parquet"
+          ],
+          "items": {
+            "enum": [
+              "csv",
+              "parquet"
+            ],
+            "type": "string"
+          },
+          "title": " ",
+          "type": "array",
+          "description": "Choose the file format for your download. ",
+          "uniqueItems": true
+        },
+        "filename_prefix": {
+          "default": "patrol_events",
+          "title": "Filename Prefix",
+          "type": "string",
+          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Event Download File Format"
     }
   },
   "$defs": {
@@ -890,8 +865,7 @@
           "patrol_types",
           "event_types",
           "status",
-          "include_null_geometry",
-          "patrols_overlap_daterange"
+          "include_null_geometry"
         ],
         "patrol_types": {
           "items": {
@@ -924,6 +898,28 @@
         }
       }
     },
+    "Generate Maps": {
+      "ui:order": [
+        "generate_maps",
+        "set_patrol_traj_color_column",
+        "set_patrol_event_color_column",
+        "base_map_defs"
+      ],
+      "base_map_defs": {
+        "base_maps": {
+          "items": {
+            "ui:options": {
+              "label": false
+            }
+          }
+        }
+      },
+      "generate_maps": {
+        "value": {
+          "ui:help": "Not recommended for large datasets to improve performance."
+        }
+      }
+    },
     "Refine Patrol Data": {
       "ui:order": [
         "customize_columns_traj",
@@ -942,26 +938,6 @@
         "filename_prefix"
       ]
     },
-    "Generate Maps": {
-      "ui:order": [
-        "generate_maps",
-        "base_map_defs"
-      ],
-      "base_map_defs": {
-        "base_maps": {
-          "items": {
-            "ui:options": {
-              "label": false
-            }
-          }
-        }
-      },
-      "generate_maps": {
-        "value": {
-          "ui:help": "Not recommended for large datasets to improve performance."
-        }
-      }
-    },
     "ui:order": [
       "workflow_details",
       "er_client_name",
@@ -972,8 +948,6 @@
       "Refine Patrol Data",
       "persist_patrol_traj",
       "persist_patrol_events",
-      "set_patrol_traj_color_column",
-      "set_patrol_event_color_column",
       "Generate Maps"
     ]
   },

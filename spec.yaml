@@ -43,22 +43,22 @@ rjsf-overrides:
       Drop trajectory segments outside these length / time / speed bounds (e.g. to remove
       implausible jumps). Applies to the patrol trajectories only.
 
-    # --- Trajectory Style: color column var ---
-    set_patrol_traj_color_column.description: "Differentiate tracks by color using the selected category."
-    set_patrol_traj_color_column.properties.var.title: "Category"
-    set_patrol_traj_color_column.properties.var.default: "patrol_subject"
-    set_patrol_traj_color_column.properties.var.oneOf: [
+    # --- Generate Maps: trajectory color column var ---
+    Generate Maps.properties.set_patrol_traj_color_column.description: "Differentiate tracks by color using the selected category."
+    Generate Maps.properties.set_patrol_traj_color_column.properties.var.title: "Category"
+    Generate Maps.properties.set_patrol_traj_color_column.properties.var.default: "patrol_subject"
+    Generate Maps.properties.set_patrol_traj_color_column.properties.var.oneOf: [
       {"const": "patrol_type", "title": "Patrol Type"},
       {"const": "patrol_status", "title": "Patrol Status"},
       {"const": "patrol_subject", "title": "Patrol Subject"},
       {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
     ]
 
-    # --- Event Style: color column var ---
-    set_patrol_event_color_column.description: "Differentiate events by color using the selected category."
-    set_patrol_event_color_column.properties.var.title: "Category"
-    set_patrol_event_color_column.properties.var.default: "event_type"
-    set_patrol_event_color_column.properties.var.oneOf: [
+    # --- Generate Maps: event color column var ---
+    Generate Maps.properties.set_patrol_event_color_column.description: "Differentiate events by color using the selected category."
+    Generate Maps.properties.set_patrol_event_color_column.properties.var.title: "Category"
+    Generate Maps.properties.set_patrol_event_color_column.properties.var.default: "event_type"
+    Generate Maps.properties.set_patrol_event_color_column.properties.var.oneOf: [
       {"const": "event_type", "title": "Event Type"},
       {"const": "event_category", "title": "Event Category"},
     ]
@@ -143,6 +143,13 @@ rjsf-overrides:
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
     Generate Maps.generate_maps.value.ui:help: >-
       Not recommended for large datasets to improve performance.
+    # Merged-card field order: checkbox first, then the two colour category
+    # selectors, then the base layers (group merge alone does not guarantee it).
+    Generate Maps.ui:order:
+      - generate_maps
+      - set_patrol_traj_color_column
+      - set_patrol_event_color_column
+      - base_map_defs
     ui:order:
       - workflow_details
       - er_client_name
@@ -153,8 +160,6 @@ rjsf-overrides:
       - Refine Patrol Data
       - persist_patrol_traj
       - persist_patrol_events
-      - set_patrol_traj_color_column
-      - set_patrol_event_color_column
       - Generate Maps
 
 task-instance-defaults:
@@ -191,6 +196,7 @@ workflow:
           raise_on_empty: false
           truncate_to_time_range: true
           sub_page_size: 100
+          patrols_overlap_daterange: true
       - id: prefetch_patrols
         task: get_patrols_from_combined_params
         partial:
@@ -329,15 +335,26 @@ workflow:
       roi_name: null
       reset_index: true
 
-  # === TRAJECTORY STYLE ===
-  - name: Trajectory Category
-    id: set_patrol_traj_color_column
-    task: set_string_var
+  # === GENERATE MAPS (user-facing config) ===
+  # This card merges with the map-rendering task-group of the same title below
+  # (patrol-trajectory-event-map pattern); the checkbox and the two colour
+  # category selectors render together at the top of the Generate Maps card.
+  - title: Generate Maps
+    type: task-group
+    description: >-
+      Generate maps to visualize patrol trajectories and events.
+    tasks:
+      - name: Generate Maps in Dashboard
+        id: generate_maps
+        task: invert_bool
 
-  # === EVENT STYLE ===
-  - name: Event Category
-    id: set_patrol_event_color_column
-    task: set_string_var
+      - name: Trajectory Category
+        id: set_patrol_traj_color_column
+        task: set_string_var
+
+      - name: Event Category
+        id: set_patrol_event_color_column
+        task: set_string_var
 
   # === GROUP DATA ===
   - title: Group Data
@@ -526,10 +543,6 @@ workflow:
     description: >-
       Generate maps to visualize patrol trajectories and events.
     tasks:
-      - name: Generate Maps in Dashboard
-        id: generate_maps
-        task: invert_bool
-
       - name: ""
         id: skip_traj_map
         task: maybe_skip_df
