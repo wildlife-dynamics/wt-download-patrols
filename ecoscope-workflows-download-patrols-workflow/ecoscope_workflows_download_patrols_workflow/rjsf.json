@@ -257,6 +257,32 @@
       "title": "Trajectory Category",
       "description": "Differentiate tracks by color using the selected category."
     },
+    "set_patrol_event_color_column": {
+      "additionalProperties": false,
+      "properties": {
+        "var": {
+          "title": "Category",
+          "type": "string",
+          "default": "event_type",
+          "oneOf": [
+            {
+              "const": "event_type",
+              "title": "Event Type"
+            },
+            {
+              "const": "event_category",
+              "title": "Event Category"
+            }
+          ]
+        }
+      },
+      "required": [
+        "var"
+      ],
+      "type": "object",
+      "title": "Event Category",
+      "description": "Differentiate events by color using the selected category."
+    },
     "Group Data": {
       "type": "object",
       "description": "Configure how patrols and events are grouped (by category or temporal index) and split into per-group datasets for exporting and mapping.",
@@ -274,13 +300,25 @@
                   },
                   {
                     "$ref": "#/$defs/TemporalGrouper"
+                  },
+                  {
+                    "$ref": "#/$defs/SpatialGrouper"
                   }
                 ],
                 "title": "Group by"
               },
               "title": " ",
               "type": "array",
-              "description": ""
+              "description": "",
+              "ecoscope:transform": [
+                {
+                  "transformer": "EarthRangerEnumResolver",
+                  "transformer_kws": {
+                    "type": "spatial_feature_group",
+                    "depends_on": "properties.er_client_name.properties.data_source.properties.name"
+                  }
+                }
+              ]
             }
           },
           "type": "object",
@@ -935,6 +973,7 @@
       "persist_patrol_traj",
       "persist_patrol_events",
       "set_patrol_traj_color_column",
+      "set_patrol_event_color_column",
       "Generate Maps"
     ]
   },

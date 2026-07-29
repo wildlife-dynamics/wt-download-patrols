@@ -54,12 +54,29 @@ rjsf-overrides:
       {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
     ]
 
+    # --- Event Style: color column var ---
+    set_patrol_event_color_column.description: "Differentiate events by color using the selected category."
+    set_patrol_event_color_column.properties.var.title: "Category"
+    set_patrol_event_color_column.properties.var.default: "event_type"
+    set_patrol_event_color_column.properties.var.oneOf: [
+      {"const": "event_type", "title": "Event Type"},
+      {"const": "event_category", "title": "Event Category"},
+    ]
+
     # --- Group Data: grouper override ---
     Group Data.properties.groupers.title: ""
     Group Data.properties.groupers.properties.groupers.description: ""
     Group Data.properties.groupers.properties.groupers.items.anyOf:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
+      - {"$ref": "#/$defs/SpatialGrouper"}
+    # Spatial grouper options enumerate the ER site's spatial feature groups
+    # (events/patrols workflow pattern).
+    Group Data.properties.groupers.properties.groupers.ecoscope:transform:
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: spatial_feature_group
+          depends_on: properties.er_client_name.properties.data_source.properties.name
 
     # --- Refine Patrol Data: Remove Columns ---
     Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.title: " "
@@ -137,6 +154,7 @@ rjsf-overrides:
       - persist_patrol_traj
       - persist_patrol_events
       - set_patrol_traj_color_column
+      - set_patrol_event_color_column
       - Generate Maps
 
 task-instance-defaults:
@@ -316,6 +334,11 @@ workflow:
     id: set_patrol_traj_color_column
     task: set_string_var
 
+  # === EVENT STYLE ===
+  - name: Event Category
+    id: set_patrol_event_color_column
+    task: set_string_var
+
   # === GROUP DATA ===
   - title: Group Data
     type: task-group
@@ -327,21 +350,57 @@ workflow:
         id: groupers
         task: set_groupers
 
+      # Resolve spatial groupers: fetch the referenced ER spatial feature groups
+      # and bake them into the grouper objects (events/patrols workflow pattern).
+      # With no spatial grouper configured these are no-ops and resolved_groupers
+      # passes the groupers through unchanged. All downstream grouper consumers
+      # use resolved_groupers, never groupers directly.
+      - task: extract_spatial_grouper_feature_group_names
+        id: spatial_group_ids
+        partial:
+          groupers: ${{ workflow.groupers.return }}
+
+      - task: get_spatial_features_group
+        id: fetch_all_spatial_feature_groups
+        partial:
+          client: ${{ workflow.er_client_name.return }}
+        map:
+          argnames: spatial_features_group_name
+          argvalues: ${{ workflow.spatial_group_ids.return }}
+
+      - task: resolve_spatial_feature_groups_for_spatial_groupers
+        id: resolved_groupers
+        skipif:
+          conditions:
+            - never
+        partial:
+          groupers: ${{ workflow.groupers.return }}
+          spatial_feature_groups: ${{ workflow.fetch_all_spatial_feature_groups.return }}
+
       - name: Add temporal index to Patrol Trajectories
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
           df: ${{ workflow.customize_columns_internally.return }}
           time_col: "segment_start"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
+
+      # Spatial index so Spatial groupers from the Group Data card can split the
+      # tracks by feature-group geometry (no-op when no spatial grouper is set).
+      - name: Add Spatial Index to Patrol Trajectories
+        id: traj_add_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.traj_add_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
       - name: Rename value grouper columns for Trajectories
         id: traj_rename_grouper_columns
         task: map_columns
         partial:
-          df: ${{ workflow.traj_add_temporal_index.return }}
+          df: ${{ workflow.traj_add_spatial_index.return }}
           drop_columns: ["patrol_type"]
           retain_columns: []
           raise_if_not_found: false
@@ -363,16 +422,25 @@ workflow:
         partial:
           df: ${{ workflow.filter_patrol_events.return }}
           time_col: "patrol_start_time"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
+
+      # Spatial index so Spatial groupers from the Group Data card can split the
+      # events by feature-group geometry (no-op when no spatial grouper is set).
+      - name: Add Spatial Index to Patrol Events
+        id: pe_add_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.pe_add_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
       - name: Patrol Events Colormap
         id: pe_colormap
         task: apply_color_map
         partial:
-          df: ${{ workflow.pe_add_temporal_index.return }}
-          input_column_name: "event_type"
+          df: ${{ workflow.pe_add_spatial_index.return }}
+          input_column_name: ${{ workflow.set_patrol_event_color_column.return }}
           colormap: "tab20b"
           output_column_name: "event_type_colormap"
 
@@ -395,14 +463,14 @@ workflow:
         task: split_groups
         partial:
           df: ${{ workflow.patrol_traj_cols_to_string.return }}
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
       - name: Split Patrol Events by Group
         id: split_pe_groups
         task: split_groups
         partial:
           df: ${{ workflow.pe_cols_to_string.return }}
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
   # === REFINE PATROL DATA ===
   - title: Refine Patrol Data
@@ -514,9 +582,10 @@ workflow:
           drop_columns: []
           retain_columns: []
           raise_if_not_found: false
+          # event_type / event_category stay raw so the chosen colour category is
+          # still present for the event layer's legend label_column lookup.
           rename_columns:
             patrol_serial_number: "Patrol Serial"
-            event_type: "Event Type"
             time: "Event Time"
         mapvalues:
           argnames: df
@@ -538,6 +607,7 @@ workflow:
           legend:
             label_column: ${{ workflow.set_patrol_traj_color_column.return }}
             color_column: "patrol_traj_colormap"
+            title: "Patrols"
           tooltip_columns: ["Patrol Serial", "Patrol Type", "Start Time", "Duration (s)", "Speed (kph)"]
         mapvalues:
           argnames: geodataframe
@@ -555,8 +625,11 @@ workflow:
           layer_style:
             fill_color_column: "event_type_colormap"
             get_radius: 5
-          legend: null
-          tooltip_columns: ["Patrol Serial", "Event Type", "Event Time"]
+          legend:
+            label_column: ${{ workflow.set_patrol_event_color_column.return }}
+            color_column: "event_type_colormap"
+            title: "Events"
+          tooltip_columns: ["Patrol Serial", "event_type", "Event Time"]
         mapvalues:
           argnames: geodataframe
           argvalues: ${{ workflow.rename_event_display_columns.return }}
@@ -581,8 +654,10 @@ workflow:
           tile_layers: ${{ workflow.base_map_defs.return }}
           north_arrow_style:
             placement: "top-left"
+          # Per-layer legend titles ("Patrols" / "Events") drive two stacked
+          # legend boxes; legend_style.title is unused here. format_title is
+          # kept so the per-layer titles pass through the same formatting.
           legend_style:
-            title: ${{ workflow.set_patrol_traj_color_column.return }}
             format_title: true
             placement: "bottom-right"
           static: false
@@ -626,5 +701,5 @@ workflow:
       details: ${{ workflow.workflow_details.return }}
       widgets:
         - ${{ workflow.traj_pe_grouped_map_widget.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
       time_range: ${{ workflow.time_range.return }}

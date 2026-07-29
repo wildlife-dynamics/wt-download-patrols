@@ -29,6 +29,9 @@ from ecoscope.platform.tasks.io import (
     get_patrols_from_combined_params as get_patrols_from_combined_params,
 )
 from ecoscope.platform.tasks.io import (
+    get_spatial_features_group as get_spatial_features_group,
+)
+from ecoscope.platform.tasks.io import (
     persist_grouped_dfs_for_results_download as persist_grouped_dfs_for_results_download,
 )
 from ecoscope.platform.tasks.io import persist_text as persist_text
@@ -62,6 +65,9 @@ from ecoscope.platform.tasks.skip import invert_bool as invert_bool
 from ecoscope.platform.tasks.skip import maybe_skip_df as maybe_skip_df
 from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import (
+    add_spatial_index as add_spatial_index,
+)
+from ecoscope.platform.tasks.transformation import (
     add_temporal_index as add_temporal_index,
 )
 from ecoscope.platform.tasks.transformation import apply_color_map as apply_color_map
@@ -78,7 +84,13 @@ from ecoscope.platform.tasks.transformation import (
 from ecoscope.platform.tasks.transformation import (
     drop_column_prefix as drop_column_prefix,
 )
+from ecoscope.platform.tasks.transformation import (
+    extract_spatial_grouper_feature_group_names as extract_spatial_grouper_feature_group_names,
+)
 from ecoscope.platform.tasks.transformation import map_columns as map_columns
+from ecoscope.platform.tasks.transformation import (
+    resolve_spatial_feature_groups_for_spatial_groupers as resolve_spatial_feature_groups_for_spatial_groupers,
+)
 from wt_contracts import validate as _validate
 from wt_task import task
 
@@ -556,6 +568,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    set_patrol_event_color_column = (
+        task(set_string_var)
+        .validate()
+        .set_task_instance_id("set_patrol_event_color_column")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("set_patrol_event_color_column") or {}))
+        .call()
+    )
+
     groupers = (
         task(set_groupers)
         .validate()
@@ -570,6 +599,63 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(**(params.get("groupers") or {}))
+        .call()
+    )
+
+    spatial_group_ids = (
+        task(extract_spatial_grouper_feature_group_names)
+        .validate()
+        .set_task_instance_id("spatial_group_ids")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(groupers=groupers, **(params.get("spatial_group_ids") or {}))
+        .call()
+    )
+
+    fetch_all_spatial_feature_groups = (
+        task(get_spatial_features_group)
+        .validate()
+        .set_task_instance_id("fetch_all_spatial_feature_groups")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            client=er_client_name,
+            **(params.get("fetch_all_spatial_feature_groups") or {}),
+        )
+        .map(argnames=["spatial_features_group_name"], argvalues=spatial_group_ids)
+    )
+
+    resolved_groupers = (
+        task(resolve_spatial_feature_groups_for_spatial_groupers)
+        .validate()
+        .set_task_instance_id("resolved_groupers")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                never,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            groupers=groupers,
+            spatial_feature_groups=fetch_all_spatial_feature_groups,
+            **(params.get("resolved_groupers") or {}),
+        )
         .call()
     )
 
@@ -589,10 +675,31 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             df=customize_columns_internally,
             time_col="segment_start",
-            groupers=groupers,
+            groupers=resolved_groupers,
             cast_to_datetime=True,
             format="mixed",
             **(params.get("traj_add_temporal_index") or {}),
+        )
+        .call()
+    )
+
+    traj_add_spatial_index = (
+        task(add_spatial_index)
+        .validate()
+        .set_task_instance_id("traj_add_spatial_index")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            gdf=traj_add_temporal_index,
+            groupers=resolved_groupers,
+            **(params.get("traj_add_spatial_index") or {}),
         )
         .call()
     )
@@ -611,7 +718,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=traj_add_temporal_index,
+            df=traj_add_spatial_index,
             drop_columns=["patrol_type"],
             retain_columns=[],
             raise_if_not_found=False,
@@ -677,10 +784,31 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             df=filter_patrol_events,
             time_col="patrol_start_time",
-            groupers=groupers,
+            groupers=resolved_groupers,
             cast_to_datetime=True,
             format="mixed",
             **(params.get("pe_add_temporal_index") or {}),
+        )
+        .call()
+    )
+
+    pe_add_spatial_index = (
+        task(add_spatial_index)
+        .validate()
+        .set_task_instance_id("pe_add_spatial_index")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            gdf=pe_add_temporal_index,
+            groupers=resolved_groupers,
+            **(params.get("pe_add_spatial_index") or {}),
         )
         .call()
     )
@@ -699,8 +827,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=pe_add_temporal_index,
-            input_column_name="event_type",
+            df=pe_add_spatial_index,
+            input_column_name=set_patrol_event_color_column,
             colormap="tab20b",
             output_column_name="event_type_colormap",
             **(params.get("pe_colormap") or {}),
@@ -765,7 +893,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             df=patrol_traj_cols_to_string,
-            groupers=groupers,
+            groupers=resolved_groupers,
             **(params.get("split_patrol_traj_groups") or {}),
         )
         .call()
@@ -786,7 +914,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             df=pe_cols_to_string,
-            groupers=groupers,
+            groupers=resolved_groupers,
             **(params.get("split_pe_groups") or {}),
         )
         .call()
@@ -1009,7 +1137,6 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             raise_if_not_found=False,
             rename_columns={
                 "patrol_serial_number": "Patrol Serial",
-                "event_type": "Event Type",
                 "time": "Event Time",
             },
             **(params.get("rename_event_display_columns") or {}),
@@ -1040,6 +1167,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             legend={
                 "label_column": set_patrol_traj_color_column,
                 "color_column": "patrol_traj_colormap",
+                "title": "Patrols",
             },
             tooltip_columns=[
                 "Patrol Serial",
@@ -1069,8 +1197,12 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         )
         .partial(
             layer_style={"fill_color_column": "event_type_colormap", "get_radius": 5},
-            legend=None,
-            tooltip_columns=["Patrol Serial", "Event Type", "Event Time"],
+            legend={
+                "label_column": set_patrol_event_color_column,
+                "color_column": "event_type_colormap",
+                "title": "Events",
+            },
+            tooltip_columns=["Patrol Serial", "event_type", "Event Time"],
             **(params.get("patrol_events_map_layers") or {}),
         )
         .mapvalues(argnames=["geodataframe"], argvalues=rename_event_display_columns)
@@ -1112,11 +1244,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             title=None,
             tile_layers=base_map_defs,
             north_arrow_style={"placement": "top-left"},
-            legend_style={
-                "title": set_patrol_traj_color_column,
-                "format_title": True,
-                "placement": "bottom-right",
-            },
+            legend_style={"format_title": True, "placement": "bottom-right"},
             static=False,
             max_zoom=20,
             widget_id=set_patrol_map_title,
@@ -1200,7 +1328,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             details=workflow_details,
             widgets=[traj_pe_grouped_map_widget],
-            groupers=groupers,
+            groupers=resolved_groupers,
             time_range=time_range,
             **(params.get("patrol_dashboard") or {}),
         )

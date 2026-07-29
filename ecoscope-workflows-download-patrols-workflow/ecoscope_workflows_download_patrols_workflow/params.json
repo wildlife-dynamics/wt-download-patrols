@@ -205,6 +205,20 @@
       "type": "object",
       "title": "Trajectory Category"
     },
+    "set_patrol_event_color_column": {
+      "additionalProperties": false,
+      "properties": {
+        "var": {
+          "title": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "var"
+      ],
+      "type": "object",
+      "title": "Event Category"
+    },
     "groupers": {
       "additionalProperties": false,
       "properties": {
@@ -803,6 +817,7 @@
       "er_patrol_and_events_params",
       "patrol_filters",
       "set_patrol_traj_color_column",
+      "set_patrol_event_color_column",
       "groupers",
       "customize_columns_traj",
       "sql_query_traj",
