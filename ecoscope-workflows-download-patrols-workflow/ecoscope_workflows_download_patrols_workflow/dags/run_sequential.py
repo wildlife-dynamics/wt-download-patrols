@@ -282,7 +282,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .partial(
             df=patrol_obs,
             timezone=get_timezone,
-            columns=["fixtime"],
+            columns=["patrol_start_time", "patrol_end_time", "fixtime"],
             **(params.get("convert_patrols_to_user_timezone") or {}),
         )
         .call()
@@ -302,7 +302,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=patrol_events,
+            df=event_type_display_names,
             timezone=get_timezone,
             columns=["time"],
             **(params.get("convert_events_to_user_timezone") or {}),

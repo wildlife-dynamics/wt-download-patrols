@@ -206,13 +206,15 @@ workflow:
     partial:
       df: ${{ workflow.patrol_obs.return }}
       timezone: ${{ workflow.get_timezone.return }}
-      columns: ["fixtime"]
+      columns: ["patrol_start_time", "patrol_end_time", "fixtime"]
 
   - name: Convert Patrol Events to Timezone
     id: convert_events_to_user_timezone
     task: convert_values_to_timezone
     partial:
-      df: ${{ workflow.patrol_events.return }}
+      # Route through the display-name resolver so event_type display names
+      # (not raw slugs) reach the events branch, downloads, and the map.
+      df: ${{ workflow.event_type_display_names.return }}
       timezone: ${{ workflow.get_timezone.return }}
       columns: ["time"]
 
