@@ -5,17 +5,26 @@
 
 ```yaml
 # fingerprint:
-artifacts_sha256_basic: bf5bf9a85afcbd1c9664a21481c9dd80980eddfd3565cd6126b3db65e56ded02
-artifacts_sha256_strict: 6a1a08f9053a43c1fbae66ae6d503e332347209fb07449b4b60a5df60c76069f
+artifacts_sha256_basic: ecaed3b15fb1cf72d016ebc27d3d3713c165532e751800ba58e1778385f9c3c4
+artifacts_sha256_strict: e4173fbdb44725f85bee39a574ade0f061173fc7c27d516e4916dfcf7915835e
 installed_requirements:
 - channel: https://repo.prefix.dev/ecoscope-workflows/
-  name: ecoscope-platform
-  version: {version: ==2.17.1}
+  name: lonboard
+  version: {version: ==0.0.8}
+- channel: conda-forge
+  name: numpy
+  version: {version: ==2.0.2}
+- channel: conda-forge
+  name: pyarrow
+  version: {version: ==23.0.1}
+- channel: conda-forge
+  name: rasterio
+  version: {version: ==1.4.4}
 - channel: conda-forge
   name: pydeck
   version: {version: ==0.9.2}
-params_sha256: 2909623e31f12e7753767ec1aa6f671642f3f6b6a83c35d199048579bd0169c0
-spec_sha256: b5f20bd99336856a31e384c60cb70196d953098520eb0f655d154cfb1d48673b
+params_sha256: b004b99b2ef12ab98141e3644551c8f9252a871a69e4dd7e7af5be6d5b66cc75
+spec_sha256: 07d5ad4567f03e7613d54a7806751befa528995bac94f69f30111dd3fe08a45f
 
 ```
 

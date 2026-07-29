@@ -6,7 +6,22 @@ from ecoscope.platform.tasks.config import get_bounding_box as get_bounding_box
 from ecoscope.platform.tasks.config import (
     get_filter_point_coords as get_filter_point_coords,
 )
+from ecoscope.platform.tasks.config import (
+    get_patrol_event_filename_prefix as get_patrol_event_filename_prefix,
+)
+from ecoscope.platform.tasks.config import (
+    get_patrol_event_filetypes as get_patrol_event_filetypes,
+)
+from ecoscope.platform.tasks.config import (
+    get_patrol_track_filename_prefix as get_patrol_track_filename_prefix,
+)
+from ecoscope.platform.tasks.config import (
+    get_patrol_track_filetypes as get_patrol_track_filetypes,
+)
 from ecoscope.platform.tasks.config import get_segment_filter as get_segment_filter
+from ecoscope.platform.tasks.config import (
+    set_patrol_download_params as set_patrol_download_params,
+)
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.config import set_traj_filters as set_traj_filters
 from ecoscope.platform.tasks.config import set_workflow_details as set_workflow_details
@@ -994,6 +1009,91 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .mapvalues(argnames=["df"], argvalues=customize_columns_traj)
     )
 
+    download_params = (
+        task(set_patrol_download_params)
+        .validate()
+        .set_task_instance_id("download_params")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("download_params") or {}))
+        .call()
+    )
+
+    track_filetypes = (
+        task(get_patrol_track_filetypes)
+        .validate()
+        .set_task_instance_id("track_filetypes")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(params=download_params, **(params.get("track_filetypes") or {}))
+        .call()
+    )
+
+    track_filename_prefix = (
+        task(get_patrol_track_filename_prefix)
+        .validate()
+        .set_task_instance_id("track_filename_prefix")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(params=download_params, **(params.get("track_filename_prefix") or {}))
+        .call()
+    )
+
+    event_filetypes = (
+        task(get_patrol_event_filetypes)
+        .validate()
+        .set_task_instance_id("event_filetypes")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(params=download_params, **(params.get("event_filetypes") or {}))
+        .call()
+    )
+
+    event_filename_prefix = (
+        task(get_patrol_event_filename_prefix)
+        .validate()
+        .set_task_instance_id("event_filename_prefix")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(params=download_params, **(params.get("event_filename_prefix") or {}))
+        .call()
+    )
+
     persist_patrol_traj = (
         task(persist_grouped_dfs_for_results_download)
         .validate()
@@ -1010,6 +1110,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             grouped_dfs=sql_query_traj,
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
+            filetypes=track_filetypes,
+            filename_prefix=track_filename_prefix,
             **(params.get("persist_patrol_traj") or {}),
         )
         .call()
@@ -1031,6 +1133,8 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             grouped_dfs=split_pe_groups,
             root_path=os.environ["ECOSCOPE_WORKFLOWS_RESULTS"],
             sanitize=True,
+            filetypes=event_filetypes,
+            filename_prefix=event_filename_prefix,
             **(params.get("persist_patrol_events") or {}),
         )
         .call()

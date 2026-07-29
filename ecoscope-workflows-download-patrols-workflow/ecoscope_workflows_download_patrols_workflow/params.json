@@ -480,13 +480,11 @@
       "type": "object",
       "title": "Apply SQL Query"
     },
-    "persist_patrol_traj": {
+    "download_params": {
       "additionalProperties": false,
       "properties": {
-        "filetypes": {
-          "default": [
-            "csv"
-          ],
+        "track_filetypes": {
+          "default": null,
           "items": {
             "enum": [
               "csv",
@@ -496,30 +494,13 @@
             ],
             "type": "string"
           },
-          "title": "Filetypes",
+          "title": "Patrol Track Filetype(s)",
           "type": "array",
-          "description": "The output format",
+          "description": "The output format for the patrol track files.",
           "uniqueItems": true
         },
-        "filename_prefix": {
+        "event_filetypes": {
           "default": null,
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Patrol Track Download File Format"
-    },
-    "persist_patrol_events": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "csv"
-          ],
           "items": {
             "enum": [
               "csv",
@@ -529,22 +510,29 @@
             ],
             "type": "string"
           },
-          "title": "Filetypes",
+          "title": "Patrol Event Filetype(s)",
           "type": "array",
-          "description": "The output format",
+          "description": "The output format for the patrol event files.",
           "uniqueItems": true
         },
-        "filename_prefix": {
-          "default": null,
-          "title": "Filename Prefix",
+        "track_filename_prefix": {
+          "default": "patrol_tracks",
+          "title": "Patrol Track Filename prefix",
           "type": "string",
-          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
+          "description": "A name added to the beginning of your patrol track output files. A unique ID is automatically added to the end to prevent duplicates.",
+          "ecoscope:advanced": true
+        },
+        "event_filename_prefix": {
+          "default": "patrol_events",
+          "title": "Patrol Event Filename prefix",
+          "type": "string",
+          "description": "A name added to the beginning of your patrol event output files. A unique ID is automatically added to the end to prevent duplicates.",
           "ecoscope:advanced": true
         }
       },
-      "required": [],
       "type": "object",
-      "title": "Event Download File Format"
+      "required": [],
+      "title": "Download Configuration"
     }
   },
   "$defs": {
@@ -790,16 +778,12 @@
         "trajectory_segment_filter"
       ]
     },
-    "persist_patrol_traj": {
+    "download_params": {
       "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
-    "persist_patrol_events": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
+        "track_filetypes",
+        "event_filetypes",
+        "track_filename_prefix",
+        "event_filename_prefix"
       ]
     },
     "ui:order": [
@@ -815,8 +799,7 @@
       "groupers",
       "customize_columns_traj",
       "sql_query_traj",
-      "persist_patrol_traj",
-      "persist_patrol_events"
+      "download_params"
     ]
   },
   "additionalProperties": false

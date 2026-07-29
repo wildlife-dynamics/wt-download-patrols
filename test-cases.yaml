@@ -46,12 +46,11 @@ base:
       var: "event_type"
     sql_query_traj:
       query: ''
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events"
     generate_maps:
       value: true
     base_map_defs:
@@ -116,13 +115,11 @@ month-grouper:
     set_patrol_event_color_column:
       var: "event_type"
 
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories"
-
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events"
 
     generate_maps:
       value: true
@@ -174,12 +171,11 @@ with-event-types:
       var: "patrol_type"
     set_patrol_event_color_column:
       var: "event_type"
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories_with_events"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events_typed"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks_with_events"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events_typed"
     generate_maps:
       value: true
     base_map_defs:
@@ -229,11 +225,10 @@ color-by-patrol-type:
       var: "patrol_type"
     set_patrol_event_color_column:
       var: "event_type"
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories_by_type"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks_by_type"
+      event_filetypes: ["parquet", "csv"]
     generate_maps:
       value: true
     base_map_defs:
@@ -286,12 +281,11 @@ value-grouper:
     groupers:
       groupers:
         - index_name: "patrol_serial_number"
-    persist_patrol_traj:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_trajectories_by_serial"
-    persist_patrol_events:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_events_by_serial"
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrol_tracks_by_serial"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events_by_serial"
     generate_maps:
       value: true
     base_map_defs:
@@ -345,12 +339,11 @@ sql-filter:
         SELECT * FROM df WHERE speed_kmhr > 5.0
     groupers:
       groupers: []
-    persist_patrol_traj:
-      filetypes: ["csv"]
-      filename_prefix: "patrols_fast"
-    persist_patrol_events:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrols_fast"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events"
     generate_maps:
       value: true
     base_map_defs:
@@ -405,12 +398,11 @@ spatial-grouper:
       var: "patrol_subject"
     set_patrol_event_color_column:
       var: "event_type"
-    persist_patrol_traj:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_trajectories_by_region"
-    persist_patrol_events:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_events_by_region"
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrol_tracks_by_region"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events_by_region"
     generate_maps:
       value: true
     base_map_defs:
@@ -459,12 +451,11 @@ skip-maps:
       var: "patrol_subject"
     set_patrol_event_color_column:
       var: "event_type"
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"

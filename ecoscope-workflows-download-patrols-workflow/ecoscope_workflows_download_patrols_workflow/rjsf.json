@@ -575,67 +575,66 @@
         }
       }
     },
-    "persist_patrol_traj": {
-      "additionalProperties": false,
-      "properties": {
-        "filetypes": {
-          "default": [
-            "parquet"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "parquet"
-            ],
-            "type": "string"
-          },
-          "title": " ",
-          "type": "array",
-          "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": "patrol_trajectories",
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
+    "Patrol Track & Event Download File Format": {
       "type": "object",
-      "title": "Patrol Track Download File Format"
-    },
-    "persist_patrol_events": {
-      "additionalProperties": false,
+      "description": "Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.",
+      "ecoscope:task_group": true,
       "properties": {
-        "filetypes": {
-          "default": [
-            "parquet"
-          ],
-          "items": {
-            "enum": [
-              "csv",
-              "parquet"
-            ],
-            "type": "string"
+        "download_params": {
+          "additionalProperties": false,
+          "properties": {
+            "track_filetypes": {
+              "default": [
+                "parquet"
+              ],
+              "items": {
+                "enum": [
+                  "csv",
+                  "parquet"
+                ],
+                "type": "string"
+              },
+              "title": "Patrol Track Filetype(s)",
+              "type": "array",
+              "description": "The output format for the patrol track files.",
+              "uniqueItems": true
+            },
+            "event_filetypes": {
+              "default": [
+                "parquet"
+              ],
+              "items": {
+                "enum": [
+                  "csv",
+                  "parquet"
+                ],
+                "type": "string"
+              },
+              "title": "Patrol Event Filetype(s)",
+              "type": "array",
+              "description": "The output format for the patrol event files.",
+              "uniqueItems": true
+            },
+            "track_filename_prefix": {
+              "default": "patrol_tracks",
+              "title": "Patrol Track Filename prefix",
+              "type": "string",
+              "description": "A name added to the beginning of your patrol track output files. A unique ID is automatically added to the end to prevent duplicates.",
+              "ecoscope:advanced": true
+            },
+            "event_filename_prefix": {
+              "default": "patrol_events",
+              "title": "Patrol Event Filename prefix",
+              "type": "string",
+              "description": "A name added to the beginning of your patrol event output files. A unique ID is automatically added to the end to prevent duplicates.",
+              "ecoscope:advanced": true
+            }
           },
-          "title": " ",
-          "type": "array",
-          "description": "Choose the file format for your download. ",
-          "uniqueItems": true
-        },
-        "filename_prefix": {
-          "default": "patrol_events",
-          "title": "Filename Prefix",
-          "type": "string",
-          "description": "            Optional filename to persist text to within the `root_path`.\n            If not provided, a filename will be generated based on a hash of the df content.\n            ",
-          "ecoscope:advanced": true
+          "type": "object",
+          "required": [],
+          "title": ""
         }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Event Download File Format"
+      }
     }
   },
   "$defs": {
@@ -944,17 +943,15 @@
         "sql_query_traj"
       ]
     },
-    "persist_patrol_traj": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
-    },
-    "persist_patrol_events": {
-      "ui:order": [
-        "filetypes",
-        "filename_prefix"
-      ]
+    "Patrol Track & Event Download File Format": {
+      "download_params": {
+        "ui:order": [
+          "track_filetypes",
+          "event_filetypes",
+          "track_filename_prefix",
+          "event_filename_prefix"
+        ]
+      }
     },
     "ui:order": [
       "workflow_details",
@@ -964,8 +961,7 @@
       "Filter Data",
       "Group Data",
       "Refine Patrol Data",
-      "persist_patrol_traj",
-      "persist_patrol_events",
+      "Patrol Track & Event Download File Format",
       "Generate Maps"
     ]
   },
