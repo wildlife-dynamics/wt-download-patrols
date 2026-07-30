@@ -183,7 +183,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libparquet-23.0.1-h0de02aa_20_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpng-1.6.58-h132b30e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libprotobuf-7.35.1-h8daa630_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpsl-0.22.0-h92480b3_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpsl-0.22.0-h7a62e17_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libraqm-0.11.0-h45af499_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libre2-11-2025.11.05-h5d15848_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/librttopo-1.1.0-ha909e78_20.conda
@@ -404,7 +404,7 @@ environments:
     packages:
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.4-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.14.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/attrs-26.1.0-pyhcf101f3_0.conda
@@ -418,9 +418,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/email-validator-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/email_validator-2.3.0-hd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.140.11-hedf3711_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.140.13-h2fa8227_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-cli-0.0.32-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.140.11-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.140.13-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fastar-0.11.0-py313hb5b1e11_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/h11-0.16.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/h2-4.4.0-pyhcf101f3_0.conda
@@ -483,8 +483,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing-inspection-0.4.2-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.51.0-pyhc90fa1f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.51.0-h28ae30b_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.52.0-pyhc90fa1f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.52.0-hc8d08bb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uvloop-0.22.1-py313h6535dbc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchfiles-1.2.0-py313hb9d2816_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/websockets-16.1.1-py313h3e91af1_0.conda
@@ -505,7 +505,7 @@ environments:
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/_openmp_mutex-4.5-7_kmp_llvm.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.4-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/anyio-4.14.2-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/aom-3.14.1-pl5321h513545f_1.conda
@@ -526,9 +526,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/email-validator-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/email_validator-2.3.0-hd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.140.11-hedf3711_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.140.13-h2fa8227_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-cli-0.0.32-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.140.11-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.140.13-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fastar-0.11.0-py313hb5b1e11_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/giflib-5.2.2-hd20048c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/greenlet-3.5.4-py313h1188861_0.conda
@@ -649,8 +649,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing-inspection-0.4.2-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.51.0-pyhc90fa1f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.51.0-h28ae30b_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.52.0-pyhc90fa1f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.52.0-hc8d08bb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uvloop-0.22.1-py313h6535dbc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/watchfiles-1.2.0-py313hb9d2816_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/websockets-16.1.1-py313h3e91af1_0.conda
@@ -703,16 +703,15 @@ packages:
   version: 0.0.5
   sha256: 117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101
   requires_python: '>=3.9'
-- conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.4-pyhcf101f3_0.conda
-  sha256: cc9fbc50d4ee7ee04e49ee119243e6f1765750f0fd0b4d270d5ef35461b643b1
-  md5: 52be5139047efadaeeb19c6a5103f92a
+- conda: https://conda.anaconda.org/conda-forge/noarch/annotated-doc-0.0.5-pyhcf101f3_0.conda
+  sha256: a0a320c709fded9b5178108dedebf81a1f5a5d9c7720e3af50c1ab058dadd296
+  md5: d68ec17cb915cab4642357417ec0a104
   depends:
   - python >=3.10
   - python
   license: MIT
-  license_family: MIT
-  size: 14222
-  timestamp: 1762868213144
+  size: 16785
+  timestamp: 1785335690199
 - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
   sha256: b8fcb994134d3918d1c64a9d62f4168ff85d5bfb89e698102fe4ed679fe0df24
   md5: 108c928d2a8551832dbc762b535e90bb
@@ -1984,11 +1983,11 @@ packages:
   - pydantic-settings>=2.0.0 ; extra == 'all'
   - pydantic-extra-types>=2.0.0 ; extra == 'all'
   requires_python: '>=3.10'
-- conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.140.11-hedf3711_0.conda
-  sha256: 732e846ac78431c984a6572ae3f9a9ea21ab0d8bd874306576f4c5ed92b7dd4e
-  md5: e67c7f4859d4ce0ddf4253e24bb1144a
+- conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-0.140.13-h2fa8227_0.conda
+  sha256: 5f000929a0074d1b4ae51799bf03adb7a3f29e12c76669f9e42ccaca7983f088
+  md5: 8ed1869f390c0661441b148e246c109e
   depends:
-  - fastapi-core ==0.140.11 pyhcf101f3_0
+  - fastapi-core ==0.140.13 pyhcf101f3_0
   - email_validator
   - fastapi-cli
   - fastar
@@ -1999,8 +1998,8 @@ packages:
   - python-multipart
   - uvicorn-standard
   license: MIT
-  size: 4840
-  timestamp: 1785258435997
+  size: 4856
+  timestamp: 1785328932437
 - conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-cli-0.0.32-pyhcf101f3_0.conda
   sha256: 904e4b2abe0345ac9a51d2f64b716918ef3a9ad496252f8874864fb0ffbe8d31
   md5: 873835dd2a01dd8844086f1cde2067ce
@@ -2015,9 +2014,9 @@ packages:
   license_family: MIT
   size: 20791
   timestamp: 1784211753962
-- conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.140.11-pyhcf101f3_0.conda
-  sha256: 383d920d8e934990eb3ddccf3e1b4f661d00c890a747da93abb7c1a213b47782
-  md5: f09f47d9a8bf40cd9057cb63dec41c6a
+- conda: https://conda.anaconda.org/conda-forge/noarch/fastapi-core-0.140.13-pyhcf101f3_0.conda
+  sha256: 35123d3b50c19efc1d1f27784e8df972081d3052303c92627743f56d493eef5f
+  md5: 388d8ffe17c6dd778cdd881e9e4c1da8
   depends:
   - python >=3.10
   - annotated-doc >=0.0.2
@@ -2037,8 +2036,8 @@ packages:
   - python-multipart >=0.0.18
   - uvicorn-standard >=0.12.0
   license: MIT
-  size: 105020
-  timestamp: 1785258435997
+  size: 104834
+  timestamp: 1785328932437
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fastar-0.11.0-py313hb5b1e11_0.conda
   sha256: 289277b2c72e7293f277982fe8704c476344d0f9cd122be52f594c54f1175d3a
   md5: 75b93439039a6c8123b0c59fdcf5522a
@@ -4053,18 +4052,18 @@ packages:
   purls: []
   size: 2900719
   timestamp: 1783168180812
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpsl-0.22.0-h92480b3_1.conda
-  sha256: 1dd03b21e74f41ed7af31d82f61129d94e3cce31485eb221e3acecba26ab34bf
-  md5: 9bced3ae8f4bc78a5b22f7247554c9ee
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libpsl-0.22.0-h7a62e17_2.conda
+  sha256: ccde1bf413f0d6f4d76dd714b018882fded6bbd1054862da10017c88f4f8a311
+  md5: 0eb67a1cb0a95320b05d8d53a24b1bff
   depends:
+  - libcxx >=19
   - __osx >=11.0
   - icu >=78.3,<79.0a0
-  - libcxx >=19
   license: MIT
   license_family: MIT
   purls: []
-  size: 68846
-  timestamp: 1783937608868
+  size: 72622
+  timestamp: 1785342890032
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libraqm-0.11.0-h45af499_0.conda
   sha256: b110f7f9b2cec61ea793c521950414e00cd64826e18aeb4ab40369acf05c0039
   md5: 46ea0eb4e71bffa35ab7070678bcb053
@@ -6983,9 +6982,9 @@ packages:
   - pkg:pypi/urllib3?source=hash-mapping
   size: 103560
   timestamp: 1778188657149
-- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.51.0-pyhc90fa1f_0.conda
-  sha256: e9ca2188416b40eb79e50031649ec669dfbceea5cc5895c6f94f342612159974
-  md5: fa008b61010236d744eae4ef867c63ce
+- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.52.0-pyhc90fa1f_0.conda
+  sha256: 6b0caf5b3e86d85ffbe1b3e510561a768c117a28c3eef7c6f14ccb070afd1300
+  md5: 29dea28adb4fe29b5d39909246ece255
   depends:
   - __unix
   - click >=7.0
@@ -6994,15 +6993,14 @@ packages:
   - typing_extensions >=4.0
   - python
   license: BSD-3-Clause
-  license_family: BSD
-  size: 57699
-  timestamp: 1783518883165
-- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.51.0-h28ae30b_0.conda
-  sha256: 7b123672d8b350089a6ac800dfda53efee981b625dd9f114bf7f73e9a5fbdfc5
-  md5: 999eb6aca58e2f2fc3891874aef3f95a
+  size: 59899
+  timestamp: 1785364640307
+- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.52.0-hc8d08bb_0.conda
+  sha256: 1d20312c96572809e115e97d1f7f03a29efcaf027a98be1eb0e0736c8cd7cd5d
+  md5: 33dab2cd3728a431e856a250f00eb8aa
   depends:
   - __unix
-  - uvicorn ==0.51.0 pyhc90fa1f_0
+  - uvicorn ==0.52.0 pyhc90fa1f_0
   - websockets >=10.4
   - httptools >=0.6.3
   - watchfiles >=0.20
@@ -7010,9 +7008,8 @@ packages:
   - pyyaml >=5.1
   - uvloop >=0.15.1
   license: BSD-3-Clause
-  license_family: BSD
-  size: 4154
-  timestamp: 1783518883165
+  size: 4156
+  timestamp: 1785364640307
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uvloop-0.22.1-py313h6535dbc_1.conda
   sha256: 472568a70c0fb349b80af50e1a589f02b5a78a8fbe3ed1a9524dd7675750a677
   md5: 429a325aacea5f82b8af3a7fd7ad0220

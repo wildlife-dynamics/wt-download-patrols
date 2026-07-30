@@ -156,13 +156,6 @@ rjsf-overrides:
     Generate Maps.base_map_defs.base_maps.items.ui:options.label: false
     Generate Maps.generate_maps.value.ui:help: >-
       Not recommended for large datasets to improve performance.
-    # Merged-card field order: checkbox first, then the two colour category
-    # selectors, then the base layers (group merge alone does not guarantee it).
-    Generate Maps.ui:order:
-      - generate_maps
-      - set_patrol_traj_color_column
-      - set_patrol_event_color_column
-      - base_map_defs
     ui:order:
       - workflow_details
       - er_client_name
@@ -348,11 +341,6 @@ workflow:
       reset_index: true
 
   # === GENERATE MAPS (user-facing config) ===
-  # This card merges with the map-rendering task-group of the same title below
-  # (patrol-trajectory-event-map pattern). ALL field-bearing tasks of the card
-  # must live in THIS group: a later same-title group that contributes any
-  # params clobbers the earlier group's schema, so the rendering group below
-  # holds only fully-partialed (field-less) tasks.
   - title: Generate Maps
     type: task-group
     description: >-
@@ -385,11 +373,6 @@ workflow:
         id: groupers
         task: set_groupers
 
-      # Resolve spatial groupers: fetch the referenced ER spatial feature groups
-      # and bake them into the grouper objects (events/patrols workflow pattern).
-      # With no spatial grouper configured these are no-ops and resolved_groupers
-      # passes the groupers through unchanged. All downstream grouper consumers
-      # use resolved_groupers, never groupers directly.
       - task: extract_spatial_grouper_feature_group_names
         id: spatial_group_ids
         partial:

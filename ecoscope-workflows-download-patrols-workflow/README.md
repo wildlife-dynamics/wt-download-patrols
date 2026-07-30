@@ -24,7 +24,7 @@ installed_requirements:
   name: pydeck
   version: {version: ==0.9.2}
 params_sha256: b004b99b2ef12ab98141e3644551c8f9252a871a69e4dd7e7af5be6d5b66cc75
-spec_sha256: 07d5ad4567f03e7613d54a7806751befa528995bac94f69f30111dd3fe08a45f
+spec_sha256: 6f2942e2351bc24f80fb87c08db86ff3214410b5750207fa9f9cb349bd88b43e
 
 ```
 
