@@ -1,8 +1,9 @@
 id: download_patrols
 
 requirements:
+  # >=2.17.5: first release with set_patrol_download_params + its splitters.
   - name: ecoscope-platform
-    version: ">=2.17.0, <2.18.0"
+    version: ">=2.17.5, <2.18.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: pydeck
     version: 0.9.2
@@ -43,15 +44,24 @@ rjsf-overrides:
       Drop trajectory segments outside these length / time / speed bounds (e.g. to remove
       implausible jumps). Applies to the patrol trajectories only.
 
-    # --- Trajectory Style: color column var ---
-    set_patrol_traj_color_column.description: "Differentiate tracks by color using the selected category."
-    set_patrol_traj_color_column.properties.var.title: "Category"
-    set_patrol_traj_color_column.properties.var.default: "patrol_subject"
-    set_patrol_traj_color_column.properties.var.oneOf: [
+    # --- Generate Maps: trajectory color column var ---
+    Generate Maps.properties.set_patrol_traj_color_column.description: "Differentiate tracks by color using the selected category."
+    Generate Maps.properties.set_patrol_traj_color_column.properties.var.title: "Category"
+    Generate Maps.properties.set_patrol_traj_color_column.properties.var.default: "patrol_subject"
+    Generate Maps.properties.set_patrol_traj_color_column.properties.var.oneOf: [
       {"const": "patrol_type", "title": "Patrol Type"},
       {"const": "patrol_status", "title": "Patrol Status"},
       {"const": "patrol_subject", "title": "Patrol Subject"},
       {"const": "patrol_serial_number", "title": "Patrol Serial Number"},
+    ]
+
+    # --- Generate Maps: event color column var ---
+    Generate Maps.properties.set_patrol_event_color_column.description: "Differentiate events by color using the selected category."
+    Generate Maps.properties.set_patrol_event_color_column.properties.var.title: "Category"
+    Generate Maps.properties.set_patrol_event_color_column.properties.var.default: "event_type"
+    Generate Maps.properties.set_patrol_event_color_column.properties.var.oneOf: [
+      {"const": "event_type", "title": "Event Type"},
+      {"const": "event_category", "title": "Event Category"},
     ]
 
     # --- Group Data: grouper override ---
@@ -60,6 +70,14 @@ rjsf-overrides:
     Group Data.properties.groupers.properties.groupers.items.anyOf:
       - {"$ref": "#/$defs/ValueGrouper"}
       - {"$ref": "#/$defs/TemporalGrouper"}
+      - {"$ref": "#/$defs/SpatialGrouper"}
+    # Spatial grouper options enumerate the ER site's spatial feature groups
+    # (events/patrols workflow pattern).
+    Group Data.properties.groupers.properties.groupers.ecoscope:transform:
+      - transformer: EarthRangerEnumResolver
+        transformer_kws:
+          type: spatial_feature_group
+          depends_on: properties.er_client_name.properties.data_source.properties.name
 
     # --- Refine Patrol Data: Remove Columns ---
     Refine Patrol Data.properties.customize_columns_traj.properties.drop_columns.title: " "
@@ -79,23 +97,12 @@ rjsf-overrides:
     Generate Maps.properties.generate_maps.properties.value.description: ""
     Generate Maps.properties.base_map_defs.properties.base_maps.title: "Map Base Layers"
 
-    # --- Persist ---
-    persist_patrol_traj.properties.filename_prefix.default: "patrol_trajectories"
-    # filetypes is a uniqueItems multi-select; its title renders as a large text-lg
-    # "subhead" (FieldTemplate isMultiSelectField branch — no uiSchema escape hatch).
-    # A " " title blanks that redundant heading (a "" would fall back to the raw key
-    # "filetypes"); the "... Download File Format" card title is the section label.
-    persist_patrol_traj.properties.filetypes.title: " "
-    persist_patrol_traj.properties.filetypes.default: ["parquet"]
-    persist_patrol_traj.properties.filetypes.items.enum: ["csv", "parquet"]
-    persist_patrol_traj.properties.filetypes.description: >-
-      Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.
-    persist_patrol_events.properties.filename_prefix.default: "patrol_events"
-    persist_patrol_events.properties.filetypes.title: " "
-    persist_patrol_events.properties.filetypes.default: ["parquet"]
-    persist_patrol_events.properties.filetypes.items.enum: ["csv", "parquet"]
-    persist_patrol_events.properties.filetypes.description: >-
-      Choose the file format for your download. 
+    # --- Download File Format: combined download config card ---
+    Patrol Track & Event Download File Format.properties.download_params.title: ""
+    Patrol Track & Event Download File Format.properties.download_params.properties.track_filetypes.default: ["parquet"]
+    Patrol Track & Event Download File Format.properties.download_params.properties.track_filetypes.items.enum: ["csv", "parquet"]
+    Patrol Track & Event Download File Format.properties.download_params.properties.event_filetypes.default: ["parquet"]
+    Patrol Track & Event Download File Format.properties.download_params.properties.event_filetypes.items.enum: ["csv", "parquet"]
 
   $defs:
     ValueGrouper:
@@ -134,9 +141,7 @@ rjsf-overrides:
       - Filter Data
       - Group Data
       - Refine Patrol Data
-      - persist_patrol_traj
-      - persist_patrol_events
-      - set_patrol_traj_color_column
+      - Patrol Track & Event Download File Format
       - Generate Maps
 
 task-instance-defaults:
@@ -173,6 +178,7 @@ workflow:
           raise_on_empty: false
           truncate_to_time_range: true
           sub_page_size: 100
+          patrols_overlap_daterange: true
       - id: prefetch_patrols
         task: get_patrols_from_combined_params
         partial:
@@ -206,13 +212,15 @@ workflow:
     partial:
       df: ${{ workflow.patrol_obs.return }}
       timezone: ${{ workflow.get_timezone.return }}
-      columns: ["fixtime"]
+      columns: ["patrol_start_time", "patrol_end_time", "fixtime"]
 
   - name: Convert Patrol Events to Timezone
     id: convert_events_to_user_timezone
     task: convert_values_to_timezone
     partial:
-      df: ${{ workflow.patrol_events.return }}
+      # Route through the display-name resolver so event_type display names
+      # (not raw slugs) reach the events branch, downloads, and the map.
+      df: ${{ workflow.event_type_display_names.return }}
       timezone: ${{ workflow.get_timezone.return }}
       columns: ["time"]
 
@@ -309,10 +317,27 @@ workflow:
       roi_name: null
       reset_index: true
 
-  # === TRAJECTORY STYLE ===
-  - name: Trajectory Category
-    id: set_patrol_traj_color_column
-    task: set_string_var
+  # === GENERATE MAPS (user-facing config) ===
+  - title: Generate Maps
+    type: task-group
+    description: >-
+      Generate maps to visualize patrol trajectories and events.
+    tasks:
+      - name: Generate Maps in Dashboard
+        id: generate_maps
+        task: invert_bool
+
+      - name: Trajectory Category
+        id: set_patrol_traj_color_column
+        task: set_string_var
+
+      - name: Event Category
+        id: set_patrol_event_color_column
+        task: set_string_var
+
+      - name: " "
+        id: base_map_defs
+        task: set_base_maps
 
   # === GROUP DATA ===
   - title: Group Data
@@ -325,21 +350,52 @@ workflow:
         id: groupers
         task: set_groupers
 
+      - task: extract_spatial_grouper_feature_group_names
+        id: spatial_group_ids
+        partial:
+          groupers: ${{ workflow.groupers.return }}
+
+      - task: get_spatial_features_group
+        id: fetch_all_spatial_feature_groups
+        partial:
+          client: ${{ workflow.er_client_name.return }}
+        map:
+          argnames: spatial_features_group_name
+          argvalues: ${{ workflow.spatial_group_ids.return }}
+
+      - task: resolve_spatial_feature_groups_for_spatial_groupers
+        id: resolved_groupers
+        skipif:
+          conditions:
+            - never
+        partial:
+          groupers: ${{ workflow.groupers.return }}
+          spatial_feature_groups: ${{ workflow.fetch_all_spatial_feature_groups.return }}
+
       - name: Add temporal index to Patrol Trajectories
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
           df: ${{ workflow.customize_columns_internally.return }}
           time_col: "segment_start"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
+
+      # Spatial index so Spatial groupers from the Group Data card can split the
+      # tracks by feature-group geometry (no-op when no spatial grouper is set).
+      - name: Add Spatial Index to Patrol Trajectories
+        id: traj_add_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.traj_add_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
       - name: Rename value grouper columns for Trajectories
         id: traj_rename_grouper_columns
         task: map_columns
         partial:
-          df: ${{ workflow.traj_add_temporal_index.return }}
+          df: ${{ workflow.traj_add_spatial_index.return }}
           drop_columns: ["patrol_type"]
           retain_columns: []
           raise_if_not_found: false
@@ -361,16 +417,25 @@ workflow:
         partial:
           df: ${{ workflow.filter_patrol_events.return }}
           time_col: "patrol_start_time"
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
           format: "mixed"
+
+      # Spatial index so Spatial groupers from the Group Data card can split the
+      # events by feature-group geometry (no-op when no spatial grouper is set).
+      - name: Add Spatial Index to Patrol Events
+        id: pe_add_spatial_index
+        task: add_spatial_index
+        partial:
+          gdf: ${{ workflow.pe_add_temporal_index.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
       - name: Patrol Events Colormap
         id: pe_colormap
         task: apply_color_map
         partial:
-          df: ${{ workflow.pe_add_temporal_index.return }}
-          input_column_name: "event_type"
+          df: ${{ workflow.pe_add_spatial_index.return }}
+          input_column_name: ${{ workflow.set_patrol_event_color_column.return }}
           colormap: "tab20b"
           output_column_name: "event_type_colormap"
 
@@ -393,14 +458,14 @@ workflow:
         task: split_groups
         partial:
           df: ${{ workflow.patrol_traj_cols_to_string.return }}
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
       - name: Split Patrol Events by Group
         id: split_pe_groups
         task: split_groups
         partial:
           df: ${{ workflow.pe_cols_to_string.return }}
-          groupers: ${{ workflow.groupers.return }}
+          groupers: ${{ workflow.resolved_groupers.return }}
 
   # === REFINE PATROL DATA ===
   - title: Refine Patrol Data
@@ -429,24 +494,67 @@ workflow:
           argnames: df
           argvalues: ${{ workflow.customize_columns_traj.return }}
 
-  - name: Patrol Track Download File Format
+  # === DOWNLOAD FILE FORMAT ===
+  # One combined card for both downloads (wt-download-subjects pattern): a
+  # single config task carries all four fields so the filename prefixes share
+  # one Advanced Configurations disclosure; scalar splitters unpack the tuple
+  # (the spec template engine cannot subscript returns).
+  - title: Patrol Track & Event Download File Format
+    type: task-group
+    description: >-
+      Choose the file format for your download. Parquet files are compact, fast to query, and keep all your data in a single file. Works with Python, R, QGIS, and other GIS tools.
+    tasks:
+      - name: Download Configuration
+        id: download_params
+        task: set_patrol_download_params
+
+  # download-config splitters — all inputs via `partial`, so they render no form fields.
+  - name: Split Track Filetypes
+    id: track_filetypes
+    task: get_patrol_track_filetypes
+    partial:
+      params: ${{ workflow.download_params.return }}
+
+  - name: Split Track Filename Prefix
+    id: track_filename_prefix
+    task: get_patrol_track_filename_prefix
+    partial:
+      params: ${{ workflow.download_params.return }}
+
+  - name: Split Event Filetypes
+    id: event_filetypes
+    task: get_patrol_event_filetypes
+    partial:
+      params: ${{ workflow.download_params.return }}
+
+  - name: Split Event Filename Prefix
+    id: event_filename_prefix
+    task: get_patrol_event_filename_prefix
+    partial:
+      params: ${{ workflow.download_params.return }}
+
+  - name: Persist Patrol Tracks
     id: persist_patrol_traj
     task: persist_grouped_dfs_for_results_download
     partial:
       grouped_dfs: ${{ workflow.sql_query_traj.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
+      filetypes: ${{ workflow.track_filetypes.return }}
+      filename_prefix: ${{ workflow.track_filename_prefix.return }}
     skipif:
       conditions:
         - never
 
-  - name: Event Download File Format
+  - name: Persist Patrol Events
     id: persist_patrol_events
     task: persist_grouped_dfs_for_results_download
     partial:
       grouped_dfs: ${{ workflow.split_pe_groups.return }}
       root_path: ${{ env.ECOSCOPE_WORKFLOWS_RESULTS }}
       sanitize: true
+      filetypes: ${{ workflow.event_filetypes.return }}
+      filename_prefix: ${{ workflow.event_filename_prefix.return }}
     skipif:
       conditions:
         - never
@@ -456,10 +564,6 @@ workflow:
     description: >-
       Generate maps to visualize patrol trajectories and events.
     tasks:
-      - name: Generate Maps in Dashboard
-        id: generate_maps
-        task: invert_bool
-
       - name: ""
         id: skip_traj_map
         task: maybe_skip_df
@@ -483,10 +587,6 @@ workflow:
         task: set_string_var
         partial:
           var: "Patrol Trajectories and Events Map"
-
-      - name: " "
-        id: base_map_defs
-        task: set_base_maps
 
       - name: Rename Trajectory Columns for Display
         id: rename_traj_display_columns
@@ -512,9 +612,10 @@ workflow:
           drop_columns: []
           retain_columns: []
           raise_if_not_found: false
+          # event_type / event_category stay raw so the chosen colour category is
+          # still present for the event layer's legend label_column lookup.
           rename_columns:
             patrol_serial_number: "Patrol Serial"
-            event_type: "Event Type"
             time: "Event Time"
         mapvalues:
           argnames: df
@@ -536,6 +637,7 @@ workflow:
           legend:
             label_column: ${{ workflow.set_patrol_traj_color_column.return }}
             color_column: "patrol_traj_colormap"
+            title: "Patrols"
           tooltip_columns: ["Patrol Serial", "Patrol Type", "Start Time", "Duration (s)", "Speed (kph)"]
         mapvalues:
           argnames: geodataframe
@@ -553,8 +655,11 @@ workflow:
           layer_style:
             fill_color_column: "event_type_colormap"
             get_radius: 5
-          legend: null
-          tooltip_columns: ["Patrol Serial", "Event Type", "Event Time"]
+          legend:
+            label_column: ${{ workflow.set_patrol_event_color_column.return }}
+            color_column: "event_type_colormap"
+            title: "Events"
+          tooltip_columns: ["Patrol Serial", "event_type", "Event Time"]
         mapvalues:
           argnames: geodataframe
           argvalues: ${{ workflow.rename_event_display_columns.return }}
@@ -579,8 +684,10 @@ workflow:
           tile_layers: ${{ workflow.base_map_defs.return }}
           north_arrow_style:
             placement: "top-left"
+          # Per-layer legend titles ("Patrols" / "Events") drive two stacked
+          # legend boxes; legend_style.title is unused here. format_title is
+          # kept so the per-layer titles pass through the same formatting.
           legend_style:
-            title: ${{ workflow.set_patrol_traj_color_column.return }}
             format_title: true
             placement: "bottom-right"
           static: false
@@ -624,5 +731,5 @@ workflow:
       details: ${{ workflow.workflow_details.return }}
       widgets:
         - ${{ workflow.traj_pe_grouped_map_widget.return }}
-      groupers: ${{ workflow.groupers.return }}
+      groupers: ${{ workflow.resolved_groupers.return }}
       time_range: ${{ workflow.time_range.return }}

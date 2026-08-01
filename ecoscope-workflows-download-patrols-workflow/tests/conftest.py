@@ -6,9 +6,10 @@ import hashlib
 import io
 import json
 import uuid
+from collections.abc import Coroutine, Generator, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Coroutine, Generator, Iterator, Literal
+from typing import Any, Literal
 from unittest.mock import patch
 
 import numpy as np
@@ -45,6 +46,7 @@ IO_TASKS_IMPORTABLE_REFERENCES = [
     "ecoscope.platform.tasks.io.get_patrols_from_combined_params",
     "ecoscope.platform.tasks.io.get_patrol_observations_from_patrols_df_and_combined_params",
     "ecoscope.platform.tasks.io.get_event_type_display_names_from_events",
+    "ecoscope.platform.tasks.io.get_spatial_features_group",
 ]
 
 yaml = ruamel.yaml.YAML(typ="safe")
