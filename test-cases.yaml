@@ -42,14 +42,15 @@ base:
         min_speed_kmhr: 0.01
     set_patrol_traj_color_column:
       var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
     sql_query_traj:
       query: ''
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events"
     generate_maps:
       value: true
     base_map_defs:
@@ -111,14 +112,14 @@ month-grouper:
 
     set_patrol_traj_color_column:
       var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
 
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories"
-
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events"
 
     generate_maps:
       value: true
@@ -168,12 +169,13 @@ with-event-types:
         min_speed_kmhr: 0.01
     set_patrol_traj_color_column:
       var: "patrol_type"
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories_with_events"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events_typed"
+    set_patrol_event_color_column:
+      var: "event_type"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks_with_events"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events_typed"
     generate_maps:
       value: true
     base_map_defs:
@@ -221,11 +223,12 @@ color-by-patrol-type:
         min_speed_kmhr: 0.01
     set_patrol_traj_color_column:
       var: "patrol_type"
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories_by_type"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
+    set_patrol_event_color_column:
+      var: "event_type"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks_by_type"
+      event_filetypes: ["parquet", "csv"]
     generate_maps:
       value: true
     base_map_defs:
@@ -273,15 +276,16 @@ value-grouper:
         min_speed_kmhr: 0.01
     set_patrol_traj_color_column:
       var: "patrol_type"
+    set_patrol_event_color_column:
+      var: "event_type"
     groupers:
       groupers:
         - index_name: "patrol_serial_number"
-    persist_patrol_traj:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_trajectories_by_serial"
-    persist_patrol_events:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_events_by_serial"
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrol_tracks_by_serial"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events_by_serial"
     generate_maps:
       value: true
     base_map_defs:
@@ -326,6 +330,8 @@ sql-filter:
         min_speed_kmhr: 0.01
     set_patrol_traj_color_column:
       var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
     sql_query_traj:
       # sanitize (default-on) makes the columns whitelist unnecessary; SQL runs
       # per-group post-split against the trajectory schema.
@@ -333,12 +339,70 @@ sql-filter:
         SELECT * FROM df WHERE speed_kmhr > 5.0
     groupers:
       groupers: []
-    persist_patrol_traj:
-      filetypes: ["csv"]
-      filename_prefix: "patrols_fast"
-    persist_patrol_events:
-      filetypes: ["csv"]
-      filename_prefix: "patrol_events"
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrols_fast"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events"
+    generate_maps:
+      value: true
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
+spatial-grouper:
+  name: Spatial Grouper
+  description: >-
+    Mocked IO — exercises the Spatial grouper: the mock
+    get_spatial_features_group fixture returns the "SpatialGrouperTest" group
+    (Central/East/West regions), hitting the resolver tasks and both
+    add_spatial_index tasks.
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Process and visualize patrol observations and events."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00"
+      until: "2015-02-28T23:59:59"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+      include_null_geometry: false
+    groupers:
+      groupers:
+        - spatial_index_name: "SpatialGrouperTest"
+    patrol_filters:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrol_tracks_by_region"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events_by_region"
     generate_maps:
       value: true
     base_map_defs:
@@ -385,12 +449,13 @@ skip-maps:
         min_speed_kmhr: 0.01
     set_patrol_traj_color_column:
       var: "patrol_subject"
-    persist_patrol_traj:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_trajectories"
-    persist_patrol_events:
-      filetypes: ["parquet", "csv"]
-      filename_prefix: "patrol_events"
+    set_patrol_event_color_column:
+      var: "event_type"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events"
     base_map_defs:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
