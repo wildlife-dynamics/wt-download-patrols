@@ -92,17 +92,58 @@
             "done"
           ],
           "items": {
-            "enum": [
-              "active",
-              "overdue",
-              "done",
-              "cancelled"
-            ],
-            "type": "string"
+            "type": "string",
+            "oneOf": [
+              {
+                "const": "active",
+                "title": "Active"
+              },
+              {
+                "const": "overdue",
+                "title": "Overdue"
+              },
+              {
+                "const": "done",
+                "title": "Done"
+              },
+              {
+                "const": "cancelled",
+                "title": "Cancelled"
+              }
+            ]
           },
           "title": "Patrol Status",
           "type": "array",
           "description": "Choose to analyze patrols with a certain status. If left empty, patrols of all status will be analyzed",
+          "uniqueItems": true,
+          "ecoscope:advanced": true
+        },
+        "event_states": {
+          "default": null,
+          "items": {
+            "type": "string",
+            "oneOf": [
+              {
+                "const": "new",
+                "title": "New"
+              },
+              {
+                "const": "active",
+                "title": "Active"
+              },
+              {
+                "const": "resolved",
+                "title": "Resolved"
+              },
+              {
+                "const": "review",
+                "title": "Review"
+              }
+            ]
+          },
+          "title": "Event State",
+          "type": "array",
+          "description": "Choose to analyze events with a certain state. If left empty, events of all states will be analyzed",
           "uniqueItems": true,
           "ecoscope:advanced": true
         },
@@ -183,6 +224,27 @@
       "type": "object",
       "required": [],
       "title": "Filters"
+    },
+    "customize_columns_internally": {
+      "additionalProperties": false,
+      "properties": {
+        "duplicate_strategy": {
+          "default": "suffix",
+          "enum": [
+            "suffix",
+            "skip",
+            "overwrite",
+            "error"
+          ],
+          "title": "Duplicate Strategy",
+          "type": "string",
+          "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Internally Process Columns"
     },
     "generate_maps": {
       "additionalProperties": false,
@@ -447,6 +509,27 @@
       "required": [],
       "title": "Group Data"
     },
+    "traj_rename_grouper_columns": {
+      "additionalProperties": false,
+      "properties": {
+        "duplicate_strategy": {
+          "default": "suffix",
+          "enum": [
+            "suffix",
+            "skip",
+            "overwrite",
+            "error"
+          ],
+          "title": "Duplicate Strategy",
+          "type": "string",
+          "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Rename value grouper columns for Trajectories"
+    },
     "customize_columns_traj": {
       "additionalProperties": false,
       "properties": {
@@ -458,6 +541,19 @@
           "title": "Drop Columns",
           "type": "array",
           "description": "List of columns to drop.",
+          "ecoscope:advanced": true
+        },
+        "duplicate_strategy": {
+          "default": "suffix",
+          "enum": [
+            "suffix",
+            "skip",
+            "overwrite",
+            "error"
+          ],
+          "title": "Duplicate Strategy",
+          "type": "string",
+          "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
           "ecoscope:advanced": true
         }
       },
@@ -533,6 +629,48 @@
       "type": "object",
       "required": [],
       "title": "Download Configuration"
+    },
+    "rename_traj_display_columns": {
+      "additionalProperties": false,
+      "properties": {
+        "duplicate_strategy": {
+          "default": "suffix",
+          "enum": [
+            "suffix",
+            "skip",
+            "overwrite",
+            "error"
+          ],
+          "title": "Duplicate Strategy",
+          "type": "string",
+          "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Rename Trajectory Columns for Display"
+    },
+    "rename_event_display_columns": {
+      "additionalProperties": false,
+      "properties": {
+        "duplicate_strategy": {
+          "default": "suffix",
+          "enum": [
+            "suffix",
+            "skip",
+            "overwrite",
+            "error"
+          ],
+          "title": "Duplicate Strategy",
+          "type": "string",
+          "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
+          "ecoscope:advanced": true
+        }
+      },
+      "required": [],
+      "type": "object",
+      "title": "Rename Event Columns for Display"
     }
   },
   "$defs": {
@@ -768,6 +906,7 @@
         "patrol_types",
         "event_types",
         "status",
+        "event_states",
         "include_null_geometry"
       ]
     },
@@ -776,6 +915,12 @@
         "bounding_box",
         "filter_point_coords",
         "trajectory_segment_filter"
+      ]
+    },
+    "customize_columns_traj": {
+      "ui:order": [
+        "drop_columns",
+        "duplicate_strategy"
       ]
     },
     "download_params": {
@@ -792,14 +937,18 @@
       "time_range",
       "er_patrol_and_events_params",
       "patrol_filters",
+      "customize_columns_internally",
       "generate_maps",
       "set_patrol_traj_color_column",
       "set_patrol_event_color_column",
       "base_map_defs",
       "groupers",
+      "traj_rename_grouper_columns",
       "customize_columns_traj",
       "sql_query_traj",
-      "download_params"
+      "download_params",
+      "rename_traj_display_columns",
+      "rename_event_display_columns"
     ]
   },
   "additionalProperties": false
