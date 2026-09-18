@@ -295,6 +295,7 @@ workflow:
       drop_columns: ["id"]
       retain_columns: []
       raise_if_not_found: false
+      duplicate_strategy: overwrite
 
   # --- Events branch ---
   - name: Remove Column Prefix Extra (Events)
@@ -400,6 +401,7 @@ workflow:
           raise_if_not_found: false
           rename_columns:
             patrol_type__value: "patrol_type"
+          duplicate_strategy: overwrite
 
       - name: Patrol Traj Colormap
         id: traj_colormap
@@ -479,6 +481,7 @@ workflow:
           rename_columns: {}
           retain_columns: []
           raise_if_not_found: false
+          duplicate_strategy: overwrite
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.split_patrol_traj_groups.return }}
@@ -600,6 +603,7 @@ workflow:
             segment_start: "Start Time"
             timespan_seconds: "Duration (s)"
             speed_kmhr: "Speed (kph)"
+          duplicate_strategy: overwrite
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.skip_traj_map.return }}
@@ -616,6 +620,7 @@ workflow:
           rename_columns:
             patrol_serial_number: "Patrol Serial"
             time: "Event Time"
+          duplicate_strategy: overwrite
         mapvalues:
           argnames: df
           argvalues: ${{ workflow.skip_event_map.return }}

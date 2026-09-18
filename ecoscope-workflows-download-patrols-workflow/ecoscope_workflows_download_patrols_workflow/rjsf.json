@@ -257,79 +257,31 @@
         }
       }
     },
-    "customize_columns_internally": {
-      "additionalProperties": false,
-      "properties": {
-        "duplicate_strategy": {
-          "default": "suffix",
-          "enum": [
-            "suffix",
-            "skip",
-            "overwrite",
-            "error"
-          ],
-          "title": "Duplicate Strategy",
-          "type": "string",
-          "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
-          "ecoscope:advanced": true
-        }
-      },
-      "required": [],
-      "type": "object",
-      "title": "Internally Process Columns"
-    },
     "Generate Maps": {
       "type": "object",
       "description": "Generate maps to visualize patrol trajectories and events.",
       "ecoscope:task_group": true,
       "properties": {
-        "rename_traj_display_columns": {
+        "generate_maps": {
           "additionalProperties": false,
           "properties": {
-            "duplicate_strategy": {
-              "default": "suffix",
-              "enum": [
-                "suffix",
-                "skip",
-                "overwrite",
-                "error"
-              ],
-              "title": "Duplicate Strategy",
-              "type": "string",
-              "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
-              "ecoscope:advanced": true
+            "value": {
+              "default": true,
+              "title": "Generate maps in dashboard",
+              "type": "boolean",
+              "description": ""
             }
           },
-          "required": [],
           "type": "object",
-          "title": "Rename Trajectory Columns for Display"
-        },
-        "rename_event_display_columns": {
-          "additionalProperties": false,
-          "properties": {
-            "duplicate_strategy": {
-              "default": "suffix",
-              "enum": [
-                "suffix",
-                "skip",
-                "overwrite",
-                "error"
-              ],
-              "title": "Duplicate Strategy",
-              "type": "string",
-              "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
-              "ecoscope:advanced": true
-            }
-          },
           "required": [],
-          "type": "object",
-          "title": "Rename Event Columns for Display"
+          "title": ""
         },
         "set_patrol_traj_color_column": {
-          "description": "Differentiate tracks by color using the selected category.",
+          "additionalProperties": false,
           "properties": {
             "var": {
               "title": "Category",
+              "type": "string",
               "default": "patrol_subject",
               "oneOf": [
                 {
@@ -350,13 +302,20 @@
                 }
               ]
             }
-          }
+          },
+          "required": [
+            "var"
+          ],
+          "type": "object",
+          "title": "Trajectory Category",
+          "description": "Differentiate tracks by color using the selected category."
         },
         "set_patrol_event_color_column": {
-          "description": "Differentiate events by color using the selected category.",
+          "additionalProperties": false,
           "properties": {
             "var": {
               "title": "Category",
+              "type": "string",
               "default": "event_type",
               "oneOf": [
                 {
@@ -369,24 +328,206 @@
                 }
               ]
             }
-          }
-        },
-        "generate_maps": {
-          "title": "",
-          "properties": {
-            "value": {
-              "title": "Generate maps in dashboard",
-              "default": true,
-              "description": ""
-            }
-          }
+          },
+          "required": [
+            "var"
+          ],
+          "type": "object",
+          "title": "Event Category",
+          "description": "Differentiate events by color using the selected category."
         },
         "base_map_defs": {
+          "additionalProperties": false,
           "properties": {
             "base_maps": {
-              "title": "Map Base Layers"
+              "default": [
+                {
+                  "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+                  "opacity": 1,
+                  "max_zoom": 20,
+                  "min_zoom": 0
+                },
+                {
+                  "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                  "opacity": 0.5,
+                  "max_zoom": 20,
+                  "min_zoom": 0
+                }
+              ],
+              "items": {
+                "title": "Base Layer",
+                "anyOf": [
+                  {
+                    "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
+                    "properties": {
+                      "url": {
+                        "default": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        "title": "Preset Layer URL",
+                        "type": "string",
+                        "const": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        "enum": [
+                          "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        ]
+                      },
+                      "opacity": {
+                        "default": 1,
+                        "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Layer Opacity",
+                        "type": "number"
+                      }
+                    },
+                    "title": "Open Street Map",
+                    "type": "object"
+                  },
+                  {
+                    "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
+                    "properties": {
+                      "url": {
+                        "default": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+                        "title": "Preset Layer URL",
+                        "type": "string",
+                        "const": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+                        "enum": [
+                          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+                        ]
+                      },
+                      "opacity": {
+                        "default": 1,
+                        "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Layer Opacity",
+                        "type": "number"
+                      }
+                    },
+                    "title": "Roadmap",
+                    "type": "object"
+                  },
+                  {
+                    "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
+                    "properties": {
+                      "url": {
+                        "default": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                        "title": "Preset Layer URL",
+                        "type": "string",
+                        "const": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                        "enum": [
+                          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        ]
+                      },
+                      "opacity": {
+                        "default": 1,
+                        "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Layer Opacity",
+                        "type": "number"
+                      }
+                    },
+                    "title": "Satellite",
+                    "type": "object"
+                  },
+                  {
+                    "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
+                    "properties": {
+                      "url": {
+                        "default": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+                        "title": "Preset Layer URL",
+                        "type": "string",
+                        "const": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+                        "enum": [
+                          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+                        ]
+                      },
+                      "opacity": {
+                        "default": 1,
+                        "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Layer Opacity",
+                        "type": "number"
+                      }
+                    },
+                    "title": "Terrain",
+                    "type": "object"
+                  },
+                  {
+                    "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
+                    "properties": {
+                      "url": {
+                        "default": "https://server.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+                        "title": "Preset Layer URL",
+                        "type": "string",
+                        "const": "https://server.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+                        "enum": [
+                          "https://server.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}"
+                        ]
+                      },
+                      "opacity": {
+                        "default": 1,
+                        "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Layer Opacity",
+                        "type": "number"
+                      }
+                    },
+                    "title": "USGS Hillshade",
+                    "type": "object"
+                  },
+                  {
+                    "description": "A tiled raster layer loaded on-demand from a URL template (e.g., base maps).",
+                    "properties": {
+                      "url": {
+                        "default": "https://example.tiles.com/{z}/{x}/{y}.png",
+                        "description": "The URL of a publicly accessible tiled raster service.",
+                        "pattern": "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}([-a-zA-Z0-9()@:%_\\+.~#?&//=\\{\\}]*)",
+                        "title": "Custom Layer URL",
+                        "type": "string"
+                      },
+                      "opacity": {
+                        "default": 1,
+                        "description": "Set layer transparency from 1 (fully visible) to 0 (hidden).",
+                        "ecoscope:advanced": true,
+                        "maximum": 1.0,
+                        "minimum": 0.0,
+                        "title": "Custom Layer Opacity",
+                        "type": "number"
+                      },
+                      "max_zoom": {
+                        "default": 20,
+                        "description": "Set the maximum zoom level to fetch tiles for.",
+                        "title": "Custom Layer Max Zoom",
+                        "type": "integer"
+                      },
+                      "min_zoom": {
+                        "default": 0,
+                        "description": "Set the minimum zoom level to fetch tiles for.",
+                        "title": "Custom Layer Min Zoom",
+                        "type": "integer"
+                      }
+                    },
+                    "title": "Custom Layer (Advanced)",
+                    "type": "object"
+                  }
+                ]
+              },
+              "title": "Map Base Layers",
+              "type": "array",
+              "description": "Select tile layers to use as base layers in map outputs. The first layer in the list will be the bottommost layer displayed.",
+              "ecoscope:advanced": true
             }
-          }
+          },
+          "type": "object",
+          "required": [],
+          "title": " "
         }
       }
     },
@@ -431,27 +572,6 @@
           "type": "object",
           "required": [],
           "title": ""
-        },
-        "traj_rename_grouper_columns": {
-          "additionalProperties": false,
-          "properties": {
-            "duplicate_strategy": {
-              "default": "suffix",
-              "enum": [
-                "suffix",
-                "skip",
-                "overwrite",
-                "error"
-              ],
-              "title": "Duplicate Strategy",
-              "type": "string",
-              "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
-              "ecoscope:advanced": true
-            }
-          },
-          "required": [],
-          "type": "object",
-          "title": "Rename value grouper columns for Trajectories"
         }
       }
     },
@@ -472,19 +592,6 @@
               "title": " ",
               "type": "array",
               "description": "Columns listed here will be left out of both the generated map and your download. If you're not sure, try running the workflow first to see all available columns.",
-              "ecoscope:advanced": true
-            },
-            "duplicate_strategy": {
-              "default": "suffix",
-              "enum": [
-                "suffix",
-                "skip",
-                "overwrite",
-                "error"
-              ],
-              "title": "Duplicate Strategy",
-              "type": "string",
-              "description": "Strategy for handling a rename whose new name is already taken. 'suffix': append _1, _2, etc. to the new name; 'skip': skip the rename, leaving the column under its original name; 'overwrite': replace the existing column; 'error': raise ValueError.",
               "ecoscope:advanced": true
             }
           },
@@ -852,8 +959,10 @@
     },
     "Generate Maps": {
       "ui:order": [
-        "rename_traj_display_columns",
-        "rename_event_display_columns"
+        "generate_maps",
+        "set_patrol_traj_color_column",
+        "set_patrol_event_color_column",
+        "base_map_defs"
       ],
       "base_map_defs": {
         "base_maps": {
@@ -870,23 +979,11 @@
         }
       }
     },
-    "Group Data": {
-      "ui:order": [
-        "groupers",
-        "traj_rename_grouper_columns"
-      ]
-    },
     "Refine Patrol Data": {
       "ui:order": [
         "customize_columns_traj",
         "sql_query_traj"
-      ],
-      "customize_columns_traj": {
-        "ui:order": [
-          "drop_columns",
-          "duplicate_strategy"
-        ]
-      }
+      ]
     },
     "Patrol Track & Event Download File Format": {
       "download_params": {
