@@ -515,6 +515,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             drop_columns=["id"],
             retain_columns=[],
             raise_if_not_found=False,
+            duplicate_strategy="overwrite",
             **(params.get("customize_columns_internally") or {}),
         )
         .call()
@@ -773,6 +774,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             retain_columns=[],
             raise_if_not_found=False,
             rename_columns={"patrol_type__value": "patrol_type"},
+            duplicate_strategy="overwrite",
             **(params.get("traj_rename_grouper_columns") or {}),
         )
         .call()
@@ -987,6 +989,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             rename_columns={},
             retain_columns=[],
             raise_if_not_found=False,
+            duplicate_strategy="overwrite",
             **(params.get("customize_columns_traj") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=split_patrol_traj_groups)
@@ -1218,6 +1221,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 "timespan_seconds": "Duration (s)",
                 "speed_kmhr": "Speed (kph)",
             },
+            duplicate_strategy="overwrite",
             **(params.get("rename_traj_display_columns") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=skip_traj_map)
@@ -1244,6 +1248,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
                 "patrol_serial_number": "Patrol Serial",
                 "time": "Event Time",
             },
+            duplicate_strategy="overwrite",
             **(params.get("rename_event_display_columns") or {}),
         )
         .mapvalues(argnames=["df"], argvalues=skip_event_map)
