@@ -233,6 +233,8 @@ Your patrol data will be saved in the format(s) you selected:
   - `speed_kmhr`: Speed during the segment in km/h
   - `dist_meters`: Distance covered in the segment
   - `geometry`: Line geometry of the trajectory segment
+  - `patrol_segment_id`: The patrol leg (segment) the trajectory segment belongs to
+  - `patrol_team_name`, `patrol_member_names`, `patrol_asset_names`: The patrol leg's team, members and assets (vehicles, equipment) by name. Member and asset names are lists. On EarthRanger sites without the patrol leg roster (the `patrol_schemas` flag) these three columns read `None`.
 
 #### Patrol Event Data
 
