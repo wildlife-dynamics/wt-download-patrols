@@ -465,3 +465,71 @@ skip-maps:
           max_zoom: 17
     generate_maps:
       value: false
+
+leg-names:
+  name: Patrol Leg Names (patrol_schemas flag on)
+  description: >-
+    Mocked IO on the synthetic leg fixtures (dev/fixtures/legs, a site WITH the
+    EarthRanger patrol_schemas flag): 2 patrols, 3 legs, 57 fixes on one patrol
+    type. Every trajectory row carries patrol_segment_id, patrol_team_name
+    "Leg Test Team", patrol_member_names [Ranger Amani, Ranger Baraka] and
+    patrol_asset_names [Patrol Vehicle 1]; the synthetic patrols carry no
+    events, so the events branch is skipped. The other mock cases run on the
+    packaged 2015 fixtures (no flag) and keep their pre-change columns, the
+    three name columns reading "None".
+  mock_io: true
+  mock_io_overrides:
+    ecoscope.platform.tasks.io.get_patrols_from_combined_params: dev/fixtures/legs/patrols.parquet
+    ecoscope.platform.tasks.io.get_patrol_observations_from_patrols_df_and_combined_params: dev/fixtures/legs/observations.parquet
+    ecoscope.platform.tasks.io.get_patrol_segments_from_patrols_df_and_combined_params: dev/fixtures/legs/legs.parquet
+    ecoscope.platform.tasks.io.add_patrol_team_names: dev/fixtures/legs/legs-team-names.parquet
+    ecoscope.platform.tasks.io.add_patrol_roster_names: dev/fixtures/legs/legs-roster-names.parquet
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Process and visualize patrol observations and events."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2026-01-05T00:00:00"
+      until: "2026-01-07T00:00:00"
+      timezone:
+        label: "Africa/Nairobi (UTC+03:00)"
+        tzCode: "Africa/Nairobi"
+        name: "(UTC+03:00) Nairobi"
+        utc: "+03:00"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_leg_test"]
+      status: ["done"]
+      event_types: []
+      include_null_geometry: false
+    groupers:
+      groupers: []
+    patrol_filters:
+      filter_point_coords:
+        - {x: 180.0, y: 90.0}
+        - {x: 0.0, y: 0.0}
+        - {x: 1.0, y: 1.0}
+      trajectory_segment_filter:
+        min_length_meters: 0.001
+        max_length_meters: 10000.0
+        max_time_secs: 3600.0
+        min_time_secs: 1.0
+        max_speed_kmhr: 120.0
+        min_speed_kmhr: 0.01
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
+    download_params:
+      track_filetypes: ["parquet", "csv"]
+      track_filename_prefix: "patrol_tracks_leg_names"
+      event_filetypes: ["parquet", "csv"]
+      event_filename_prefix: "patrol_events_leg_names"
+    generate_maps:
+      value: true
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0

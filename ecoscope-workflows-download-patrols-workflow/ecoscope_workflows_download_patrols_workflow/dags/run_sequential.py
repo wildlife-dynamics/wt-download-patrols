@@ -35,10 +35,17 @@ from ecoscope.platform.tasks.groupby import (
 from ecoscope.platform.tasks.groupby import set_groupers as set_groupers
 from ecoscope.platform.tasks.groupby import split_groups as split_groups
 from ecoscope.platform.tasks.io import (
+    add_patrol_roster_names as add_patrol_roster_names,
+)
+from ecoscope.platform.tasks.io import add_patrol_team_names as add_patrol_team_names
+from ecoscope.platform.tasks.io import (
     get_event_type_display_names_from_events as get_event_type_display_names_from_events,
 )
 from ecoscope.platform.tasks.io import (
     get_patrol_observations_from_patrols_df_and_combined_params as get_patrol_observations_from_patrols_df_and_combined_params,
+)
+from ecoscope.platform.tasks.io import (
+    get_patrol_segments_from_patrols_df_and_combined_params as get_patrol_segments_from_patrols_df_and_combined_params,
 )
 from ecoscope.platform.tasks.io import (
     get_patrols_from_combined_params as get_patrols_from_combined_params,
@@ -79,6 +86,9 @@ from ecoscope.platform.tasks.skip import any_is_empty_df as any_is_empty_df
 from ecoscope.platform.tasks.skip import invert_bool as invert_bool
 from ecoscope.platform.tasks.skip import maybe_skip_df as maybe_skip_df
 from ecoscope.platform.tasks.skip import never as never
+from ecoscope.platform.tasks.transformation import (
+    add_leg_names_to_tracks as add_leg_names_to_tracks,
+)
 from ecoscope.platform.tasks.transformation import (
     add_spatial_index as add_spatial_index,
 )
@@ -273,6 +283,69 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             events_gdf=patrol_events,
             append_category_names="duplicates",
             **(params.get("event_type_display_names") or {}),
+        )
+        .call()
+    )
+
+    patrol_legs = (
+        task(get_patrol_segments_from_patrols_df_and_combined_params)
+        .validate()
+        .set_task_instance_id("patrol_legs")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            patrols_df=prefetch_patrols,
+            combined_params=er_patrol_and_events_params,
+            **(params.get("patrol_legs") or {}),
+        )
+        .call()
+    )
+
+    legs_team_names = (
+        task(add_patrol_team_names)
+        .validate()
+        .set_task_instance_id("legs_team_names")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=patrol_legs,
+            client=er_client_name,
+            **(params.get("legs_team_names") or {}),
+        )
+        .call()
+    )
+
+    legs_roster_names = (
+        task(add_patrol_roster_names)
+        .validate()
+        .set_task_instance_id("legs_roster_names")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=legs_team_names,
+            client=er_client_name,
+            **(params.get("legs_roster_names") or {}),
         )
         .call()
     )
@@ -521,6 +594,27 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    traj_leg_names = (
+        task(add_leg_names_to_tracks)
+        .validate()
+        .set_task_instance_id("traj_leg_names")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            df=customize_columns_internally,
+            legs=legs_roster_names,
+            **(params.get("traj_leg_names") or {}),
+        )
+        .call()
+    )
+
     drop_extra_prefix_events = (
         task(drop_column_prefix)
         .validate()
@@ -724,7 +818,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             unpack_depth=1,
         )
         .partial(
-            df=customize_columns_internally,
+            df=traj_leg_names,
             time_col="segment_start",
             groupers=resolved_groupers,
             cast_to_datetime=True,
