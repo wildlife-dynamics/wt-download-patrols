@@ -45,8 +45,7 @@ Before using this workflow, you need:
 
 The configuration form is organized into chapters, shown in this order: **Workflow Details**,
 **Data Source**, **Time Range**, **Patrol and Event Types**, **Filter Data**, **Group Data**,
-**Refine Patrol Data**, **Patrol Track Download File Format**, **Event Download File Format**,
-**Trajectory Category**, and **Generate Maps**.
+**Refine Patrol Data**, **Patrol Track & Event Download File Format**, and **Generate Maps**.
 
 ### Basic Configuration
 
@@ -115,33 +114,30 @@ Reshape and organize your patrol trajectory data before downloading.
   - Example: `SELECT * FROM df WHERE speed_kmhr > 5`
   - Note: Complex columns are sanitized to JSON strings automatically, so any column can be queried. The query applies only to your downloaded files, **not** the generated map.
 
-#### 8. Patrol Track Download File Format
-Choose output formats for patrol trajectory data.
+#### 8. Patrol Track & Event Download File Format
+Choose the output format(s) for the patrol trajectory files and the patrol event files. The
+filename prefixes for both live under the advanced settings (see [Filename Prefixes](#filename-prefixes)).
 
-- **Filetypes** (required): Select one or more output formats
+- **Patrol Track Filetype(s)** (required): The output format for the patrol track files
+  - Options: `csv`, `parquet`
+  - Default: `["parquet"]`
+- **Patrol Event Filetype(s)** (required): The output format for the patrol event files
   - Options: `csv`, `parquet`
   - Default: `["parquet"]`
 
-#### 9. Event Download File Format
-Choose output formats for patrol event data.
-
-- **Filetypes** (required): Select one or more output formats
-  - Options: `csv`, `parquet`
-  - Default: `["parquet"]`
-
-#### 10. Trajectory Category
-Differentiate tracks by color using the selected category.
-
-- **Category** (required): Select the patrol observation attribute to use for categorizing and coloring patrol trajectories on the generated maps.
-  - Options: `Patrol Type`, `Patrol Status`, `Patrol Subject`, `Patrol Serial Number`
-  - Default: `Patrol Subject`
-
-#### 11. Generate Maps
-Control whether maps are generated in the dashboard.
+#### 9. Generate Maps
+Control whether the dashboard map is generated and how tracks and events are coloured on it.
 
 - **Generate maps in dashboard** (optional): When checked, the workflow renders the patrol trajectories and events map in the dashboard.
   - Default: checked (`true`)
   - Help: Not recommended for large datasets to improve performance — uncheck to skip map generation.
+- **Trajectory Category** (required): Select the patrol observation attribute used to categorize and colour the patrol trajectories on the map.
+  - Options: `Patrol Type`, `Patrol Status`, `Patrol Subject`, `Patrol Serial Number`
+  - Default: `Patrol Subject`
+- **Event Category** (required): Select the event attribute used to categorize and colour the patrol events on the map.
+  - Options: `Event Type`, `Event Category`
+  - Default: `Event Type`
+- **Map Base Layers** (advanced): See [Map Base Layers](#map-base-layers) under Advanced Configuration.
 
 ### Advanced Configuration
 
@@ -173,15 +169,18 @@ live on the **Filter Data** card.
 #### Filename Prefixes
 Customize the names of your output files.
 
-- **Patrol Track Download File Format - Filename Prefix**: Custom prefix for trajectory files
-  - Default: `"patrol_trajectories"`
+Both prefixes live on the **Patrol Track & Event Download File Format** card. A unique ID is
+automatically added to the end of every file name to prevent duplicates.
+
+- **Patrol Track Filename prefix**: Custom prefix for trajectory files
+  - Default: `"patrol_tracks"`
   - Example: `"my_patrols"` will create files like `my_patrols_abc123.csv`
-- **Event Download File Format - Filename Prefix**: Custom prefix for event files
+- **Patrol Event Filename prefix**: Custom prefix for event files
   - Default: `"patrol_events"`
   - Example: `"patrol_incidents"` will create files like `patrol_incidents_xyz789.csv`
 
 #### Map Base Layers
-Select tile layers to use as base layers in map outputs.
+Select tile layers to use as base layers in map outputs. This setting lives on the **Generate Maps** card.
 
 - **Map Base Layers**: Choose base map layers
   - Default: World Topo Map and World Imagery
@@ -260,7 +259,7 @@ The workflow creates an interactive dashboard with a map visualization (unless y
 - **Features**:
   - Patrol trajectories displayed as colored polylines
   - Events displayed as colored points
-  - Color coding of trajectories based on your selected **Trajectory Category** (patrol subject, type, status, or serial number)
+  - Color coding of trajectories based on your selected **Trajectory Category** (patrol subject, type, status, or serial number) and of events based on your selected **Event Category** (event type or event category), each with its own legend
   - Interactive hover: Shows patrol details when you mouse over trajectories or events
   - Legend: Shows category colors and labels
   - Zoom and pan: Navigate the map to explore different areas
@@ -293,8 +292,8 @@ Here are some typical scenarios and how to configure the workflow for each:
 - **Patrol Status**: `["done"]`
 - **Group Data**: `Month` (`"%B"`)
 - **Trajectory Category**: `Patrol Subject`
-- **Patrol Track Download File Format**: `["parquet", "csv"]`
-- **Event Download File Format**: `["parquet", "csv"]`
+- **Patrol Track Filetype(s)**: `["parquet", "csv"]`
+- **Patrol Event Filetype(s)**: `["parquet", "csv"]`
 - **Generate maps in dashboard**: checked
 
 **Result**:
@@ -317,8 +316,8 @@ Here are some typical scenarios and how to configure the workflow for each:
 - **Patrol Status**: `["done"]`
 - **Group Data**: `Patrol Type`
 - **Trajectory Category**: `Patrol Type`
-- **Patrol Track Download File Format**: `["parquet", "csv"]`
-- **Event Download File Format**: `["parquet"]`
+- **Patrol Track Filetype(s)**: `["parquet", "csv"]`
+- **Patrol Event Filetype(s)**: `["parquet"]`
 
 **Result**:
 - Separate files for each patrol type
@@ -339,7 +338,7 @@ Here are some typical scenarios and how to configure the workflow for each:
 - **Patrol Types**: `["ecoscope_patrol"]`
 - **Refine Patrol Data → SQL Query**: `SELECT * FROM df WHERE speed_kmhr > 5.0`
 - **Trajectory Category**: `Patrol Subject`
-- **Patrol Track Download File Format**: `["csv"]`
+- **Patrol Track Filetype(s)**: `["csv"]`
 
 **Result**:
 - Downloaded trajectory files contain only segments faster than 5 km/h
@@ -361,8 +360,8 @@ Here are some typical scenarios and how to configure the workflow for each:
 - **Event Types**: `[]` (all event types)
 - **Patrol Status**: `["done"]`
 - **Generate maps in dashboard**: unchecked
-- **Patrol Track Download File Format**: `["parquet", "csv"]`
-- **Event Download File Format**: `["parquet", "csv"]`
+- **Patrol Track Filetype(s)**: `["parquet", "csv"]`
+- **Patrol Event Filetype(s)**: `["parquet", "csv"]`
 
 **Result**:
 - Faster processing for large datasets by skipping map generation
