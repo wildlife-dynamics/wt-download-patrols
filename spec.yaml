@@ -1,8 +1,56 @@
 id: download_patrols
 
+metadata:
+  name: Patrol Download Workflow
+  description: >-
+    Download EarthRanger patrols for a time range as patrol trajectories and
+    the events reported during them, filter both by location and trajectory
+    segment bounds, refine the trajectory frame with an optional SQL query,
+    export each as CSV or Parquet files (optionally split into one file per
+    category, time period or spatial region) and draw an interactive map of
+    the tracks and event locations. The trajectory frame carries the patrol
+    leg roster (segment id, team, member and asset names) on sites with the
+    EarthRanger patrol_schemas flag.
+  maintainers:
+    - name: Yun Wu
+      email: yun@wildlifedynamics.com
+      role: owner
+    - name: Alex Morling
+      email: alexm@earthranger.com
+      role: reviewer
+  outputs:
+    - name: Patrol Trajectories
+      type: file
+      description: >-
+        One CSV and/or Parquet file per group with the filtered patrol
+        trajectory segments, their patrol details and the patrol leg roster
+        columns.
+      indicators:
+        - name: Patrol Trajectories
+    - name: Patrol Events
+      type: file
+      description: >-
+        One CSV and/or Parquet file per group with the events reported during
+        the patrols.
+      indicators:
+        - name: Patrol Events
+    - name: Patrol Trajectories and Events Map
+      type: map
+      description: >-
+        An interactive map of the patrol tracks and the patrol events, each
+        colored by its chosen category, one view per group.
+      indicators:
+        - name: Patrol Trajectories
+        - name: Patrol Events
+  license: BSD-3-Clause
+  repository: https://github.com/wildlife-dynamics/wt-download-patrols
+  documentation: https://github.com/wildlife-dynamics/wt-download-patrols#readme
+  readme: README.md
+  keywords: [patrol, download, earthranger]
+
 requirements:
   - name: ecoscope-platform
-    version: ">=2.23.0, <2.24.0"
+    version: ">=2.27.1, <2.28.0"
     channel: https://repo.prefix.dev/ecoscope-workflows/
   - name: pydeck
     version: 0.9.2
@@ -199,6 +247,35 @@ workflow:
           events_gdf: ${{ workflow.patrol_events.return }}
           append_category_names: "duplicates"
 
+  # ---------- Patrol legs (one row per patrol segment) ----------
+  # Built from the patrol_segments nested in the prefetched patrols. Names are
+  # resolved once, on the leg frame, and copied onto the tracks by
+  # patrol_segment_id (add_leg_names_to_tracks below): mock-io keys fixtures
+  # per task function, so one io task cannot serve several frames in a mock
+  # run. On sites without the EarthRanger patrol_schemas flag the three name
+  # columns read "None" and nothing else changes. All inputs bound: no form
+  # fields.
+  - name: Get Patrol Legs
+    id: patrol_legs
+    task: get_patrol_segments_from_patrols_df_and_combined_params
+    partial:
+      patrols_df: ${{ workflow.prefetch_patrols.return }}
+      combined_params: ${{ workflow.er_patrol_and_events_params.return }}
+
+  - name: Add Team Names to Patrol Legs
+    id: legs_team_names
+    task: add_patrol_team_names
+    partial:
+      df: ${{ workflow.patrol_legs.return }}
+      client: ${{ workflow.er_client_name.return }}
+
+  - name: Add Member and Asset Names to Patrol Legs
+    id: legs_roster_names
+    task: add_patrol_roster_names
+    partial:
+      df: ${{ workflow.legs_team_names.return }}
+      client: ${{ workflow.er_client_name.return }}
+
   - name: Extract Timezone Selection
     id: get_timezone
     task: get_timezone_from_time_range
@@ -297,6 +374,15 @@ workflow:
       raise_if_not_found: false
       duplicate_strategy: overwrite
 
+  # patrol_segment_id reaches the tracks from the observations (patrol
+  # details); the team / member / asset names come from the leg frame.
+  - name: Add Leg Names to Patrol Tracks
+    id: traj_leg_names
+    task: add_leg_names_to_tracks
+    partial:
+      df: ${{ workflow.customize_columns_internally.return }}
+      legs: ${{ workflow.legs_roster_names.return }}
+
   # --- Events branch ---
   - name: Remove Column Prefix Extra (Events)
     id: drop_extra_prefix_events
@@ -376,7 +462,7 @@ workflow:
         id: traj_add_temporal_index
         task: add_temporal_index
         partial:
-          df: ${{ workflow.customize_columns_internally.return }}
+          df: ${{ workflow.traj_leg_names.return }}
           time_col: "segment_start"
           groupers: ${{ workflow.resolved_groupers.return }}
           cast_to_datetime: true
