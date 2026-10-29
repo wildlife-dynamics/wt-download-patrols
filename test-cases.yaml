@@ -476,7 +476,9 @@ leg-names:
     patrol_asset_names [Patrol Vehicle 1]; the synthetic patrols carry no
     events, so the events branch is skipped. The other mock cases run on the
     packaged 2015 fixtures (no flag) and keep their pre-change columns, the
-    three name columns reading "None".
+    three name columns reading "None". The mock_io_overrides below are
+    applied only by dev/run-test-cases.sh; CI's dev/pytest-cli.sh ignores
+    them, so in CI this case runs on the packaged fixtures too.
   mock_io: true
   mock_io_overrides:
     ecoscope.platform.tasks.io.get_patrols_from_combined_params: dev/fixtures/legs/patrols.parquet

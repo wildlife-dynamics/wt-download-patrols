@@ -148,23 +148,27 @@ These optional settings provide additional control over your workflow:
   - Example: `["done"]`
   - Options: `active`, `overdue`, `done`, `cancelled`
   - Default: `["done"]`
+- **Event State**: Choose to analyze events with a certain state. If left empty, events of all states will be analyzed.
+  - Example: `["active", "resolved"]`
+  - Options: `new`, `active`, `resolved`, `review`
+  - Default: empty (all states)
 
 #### Trajectory Filter
 Filter track data by setting limits on track segment length, duration, and speed. These bounds
 live on the **Filter Data** card.
 
 - **Minimum Segment Length (Meters)**:
-  - Example: `0.001`
+  - Default: `0.001`
 - **Maximum Segment Length (Meters)**:
-  - Example: `10000.0`
+  - Default: `100000.0`; Example: `10000.0`
 - **Minimum Segment Duration (Seconds)**:
-  - Example: `1.0`
+  - Default: `1.0`
 - **Maximum Segment Duration (Seconds)**:
-  - Example: `3600.0` (1 hour)
+  - Default: `172800.0` (48 hours); Example: `3600.0` (1 hour)
 - **Minimum Segment Speed (Kilometers per Hour)**:
-  - Example: `0.01`
+  - Default: `0.01`
 - **Maximum Segment Speed (Kilometers per Hour)**:
-  - Example: `120.0`
+  - Default: `500.0`; Example: `120.0`
 
 #### Filename Prefixes
 Customize the names of your output files.
@@ -184,7 +188,7 @@ Select tile layers to use as base layers in map outputs. This setting lives on t
 
 - **Map Base Layers**: Choose base map layers
   - Default: World Topo Map and World Imagery
-  - Options: Open Street Map, Roadmap, Satellite, Terrain, LandDx, USGS Hillshade, Custom Layer, etc.
+  - Options: Open Street Map, Roadmap, Satellite, Terrain, USGS Hillshade, Custom Layer
   - Note: The first layer in the list will be the bottommost layer displayed
   - You can adjust opacity for each layer from 0 (hidden) to 1 (fully visible)
 
