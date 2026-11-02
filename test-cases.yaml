@@ -465,3 +465,99 @@ skip-maps:
           max_zoom: 17
     generate_maps:
       value: false
+
+sql-allowed-functions:
+  name: SQL Previously-Blocked Keywords and Window Function
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Queries the old keyword filter rejected, plus a subquery and window function."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00Z"
+      until: "2015-02-28T23:59:59Z"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+      include_null_geometry: false
+    patrol_filters:
+      filter_point_coords: []
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
+    sql_query_traj:
+      # `replace()` and `created_at`/`updated_at` (a real trajectory column, and an
+      # alias) tripped the substring keyword blocklist that ecoscope#874 removed.
+      # The window function guards the authorizer's ALLOWED_FUNCTIONS. A subquery
+      # stands in for a CTE, which `validate_sql_query` still rejects (it requires
+      # a leading SELECT).
+      query: >-
+        SELECT *, row_number() OVER (PARTITION BY subject_key ORDER BY speed_kmhr DESC) AS speed_rank
+        FROM (
+          SELECT *, replace(patrol_subject, ' ', '_') AS subject_key,
+            created_at AS updated_at
+          FROM df
+          WHERE created_at IS NOT NULL
+        )
+    groupers:
+      groupers: []
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrols_sql_allowed"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events"
+    generate_maps:
+      value: false
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
+
+sql-csv-formula:
+  name: SQL CSV Formula Neutralization
+  mock_io: true
+  params:
+    workflow_details:
+      name: "Patrol Tracks Events Workflow"
+      description: "Formula-like cells and column labels in a CSV download."
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2015-01-10T00:00:00Z"
+      until: "2015-02-28T23:59:59Z"
+    er_patrol_and_events_params:
+      patrol_types: ["ecoscope_patrol"]
+      status: ["done"]
+      event_types: []
+      include_null_geometry: false
+    patrol_filters:
+      filter_point_coords: []
+    set_patrol_traj_color_column:
+      var: "patrol_subject"
+    set_patrol_event_color_column:
+      var: "event_type"
+    sql_query_traj:
+      # Smoke test only: the harness checks the run succeeds, not file contents.
+      # The CSV should carry these as '=1+1, '@SUM(1) and a '=label column.
+      query: >-
+        SELECT '=1+1' AS formula, '@SUM(1)' AS at_formula, patrol_subject AS "=label", *
+        FROM df
+    groupers:
+      groupers: []
+    download_params:
+      track_filetypes: ["csv"]
+      track_filename_prefix: "patrols_sql_formula"
+      event_filetypes: ["csv"]
+      event_filename_prefix: "patrol_events"
+    generate_maps:
+      value: false
+    base_map_defs:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+          opacity: 1.0
