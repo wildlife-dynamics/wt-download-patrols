@@ -46,6 +46,9 @@ IO_TASKS_IMPORTABLE_REFERENCES = [
     "ecoscope.platform.tasks.io.get_patrols_from_combined_params",
     "ecoscope.platform.tasks.io.get_patrol_observations_from_patrols_df_and_combined_params",
     "ecoscope.platform.tasks.io.get_event_type_display_names_from_events",
+    "ecoscope.platform.tasks.io.get_patrol_segments_from_patrols_df_and_combined_params",
+    "ecoscope.platform.tasks.io.add_patrol_team_names",
+    "ecoscope.platform.tasks.io.add_patrol_roster_names",
     "ecoscope.platform.tasks.io.get_spatial_features_group",
 ]
 
